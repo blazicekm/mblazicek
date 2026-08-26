@@ -1,15 +1,24 @@
 <!DOCTYPE html>
 <html lang="sk">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Matúš Blažíček — Portfolio</title>
 
+
     <style>
+
         * {
             box-sizing: border-box;
         }
+
 
         html,
         body {
@@ -20,193 +29,512 @@
             background: #eeeeee;
         }
 
+
         body {
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
+
         #book {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0;
-            max-width: 96vw;
-            max-height: 94vh;
+            max-width: 94vw;
+            max-height: 90vh;
         }
+
+
+        .spread {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+        }
+
 
         .page {
             position: relative;
-            background: white;
-            overflow: hidden;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            background: #ffffff;
         }
+
 
         .page canvas {
             display: block;
-            width: 100%;
-            height: 100%;
         }
 
+
         .page.single {
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            box-shadow:
+                0 8px 30px rgba(0, 0, 0, 0.12);
         }
+
 
         .page.left {
             box-shadow:
-                -3px 8px 30px rgba(0, 0, 0, 0.10),
-                inset -8px 0 15px -15px rgba(0, 0, 0, 0.35);
+                -4px 8px 30px rgba(0, 0, 0, 0.10),
+                inset -8px 0 15px -15px rgba(0, 0, 0, 0.40);
         }
+
 
         .page.right {
             box-shadow:
-                3px 8px 30px rgba(0, 0, 0, 0.10),
-                inset 8px 0 15px -15px rgba(0, 0, 0, 0.35);
+                4px 8px 30px rgba(0, 0, 0, 0.10),
+                inset 8px 0 15px -15px rgba(0, 0, 0, 0.40);
         }
 
-        .annotation-layer {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-
-        .annotation-layer a {
-            position: absolute;
-            pointer-events: auto;
-            display: block;
-            background: transparent;
-        }
-
-        .annotation-layer a:hover {
-            background: rgba(255, 255, 255, 0.08);
-        }
 
         #controls {
             position: fixed;
-            bottom: 22px;
             left: 50%;
+            bottom: 20px;
+
             transform: translateX(-50%);
+
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 20px;
+
             font-family: Arial, Helvetica, sans-serif;
             font-size: 11px;
+
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: #333;
+
+            color: #333333;
+
             z-index: 100;
         }
 
+
         #controls button {
-            border: 0;
+            border: none;
             background: transparent;
-            color: inherit;
-            cursor: pointer;
-            font: inherit;
+
             padding: 5px;
+
+            color: #333333;
+
+            font-family: inherit;
+            font-size: inherit;
+
+            cursor: pointer;
         }
+
 
         #controls button:hover {
             opacity: 0.45;
         }
+
 
         #pageNumber {
             min-width: 70px;
             text-align: center;
         }
 
+
         #loading {
             position: fixed;
-            font-family: Arial, Helvetica, sans-serif;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
             font-size: 11px;
+
             letter-spacing: 0.15em;
+
             text-transform: uppercase;
         }
 
+
         @media (max-width: 700px) {
+
             #book {
                 max-width: 94vw;
-                max-height: 88vh;
+                max-height: 84vh;
             }
 
             #controls {
                 bottom: 12px;
             }
+
         }
+
     </style>
+
 </head>
+
 
 <body>
 
-    <div id="loading">Loading portfolio</div>
+
+    <div id="loading">
+        Loading portfolio
+    </div>
+
 
     <div id="book"></div>
 
+
     <div id="controls">
-        <button id="previous">←</button>
-        <span id="pageNumber">1 / 50</span>
-        <button id="next">→</button>
+
+        <button id="previous">
+            ←
+        </button>
+
+        <span id="pageNumber">
+            1 / 50
+        </span>
+
+        <button id="next">
+            →
+        </button>
+
     </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-<script>
-    const PDF_URL = "../portfolio.pdf";
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-    const loading = document.getElementById("loading");
-    const book = document.getElementById("book");
+    <script>
 
-    let pdf;
+        const PDF_URL = "../portfolio.pdf";
 
-    async function loadPDF() {
 
-        pdf = await pdfjsLib.getDocument(PDF_URL).promise;
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-        loading.remove();
 
-        await renderPage(1);
-    }
+        const loading =
+            document.getElementById("loading");
 
-    async function renderPage(pageNumber) {
 
-        const page = await pdf.getPage(pageNumber);
+        const book =
+            document.getElementById("book");
 
-        const viewport = page.getViewport({
-            scale: 1
-        });
 
-        const maxWidth = window.innerWidth * 0.8;
-        const maxHeight = window.innerHeight * 0.85;
+        const pageNumber =
+            document.getElementById("pageNumber");
 
-        const scale = Math.min(
-            maxWidth / viewport.width,
-            maxHeight / viewport.height
+
+        const previous =
+            document.getElementById("previous");
+
+
+        const next =
+            document.getElementById("next");
+
+
+        let pdf;
+
+        let currentPage = 1;
+
+
+        async function loadPDF() {
+
+            try {
+
+                pdf =
+                    await pdfjsLib
+                        .getDocument(PDF_URL)
+                        .promise;
+
+
+                loading.remove();
+
+
+                await showPages();
+
+            }
+
+            catch (error) {
+
+                loading.textContent =
+                    "Error loading portfolio";
+
+                console.error(error);
+
+            }
+
+        }
+
+
+        async function renderPage(
+            pageNumberValue,
+            position
+        ) {
+
+            const page =
+                await pdf.getPage(
+                    pageNumberValue
+                );
+
+
+            const viewport =
+                page.getViewport({
+                    scale: 1
+                });
+
+
+            const maxWidth =
+                window.innerWidth * 0.46;
+
+
+            const maxHeight =
+                window.innerHeight * 0.86;
+
+
+            const scale =
+                Math.min(
+                    maxWidth / viewport.width,
+                    maxHeight / viewport.height
+                );
+
+
+            const scaledViewport =
+                page.getViewport({
+                    scale: scale
+                });
+
+
+            const pageElement =
+                document.createElement("div");
+
+
+            pageElement.className =
+                "page " + position;
+
+
+            pageElement.style.width =
+                scaledViewport.width + "px";
+
+
+            pageElement.style.height =
+                scaledViewport.height + "px";
+
+
+            const canvas =
+                document.createElement("canvas");
+
+
+            const context =
+                canvas.getContext("2d");
+
+
+            canvas.width =
+                scaledViewport.width;
+
+
+            canvas.height =
+                scaledViewport.height;
+
+
+            pageElement.appendChild(canvas);
+
+
+            await page.render({
+
+                canvasContext:
+                    context,
+
+                viewport:
+                    scaledViewport
+
+            }).promise;
+
+
+            return pageElement;
+
+        }
+
+
+        async function showPages() {
+
+            book.innerHTML = "";
+
+
+            /*
+             * PRVA STRANA
+             */
+
+            if (currentPage === 1) {
+
+                const page =
+                    await renderPage(
+                        1,
+                        "single"
+                    );
+
+
+                book.appendChild(page);
+
+
+                pageNumber.textContent =
+                    "1 / 50";
+
+
+                return;
+
+            }
+
+
+            /*
+             * POSLEDNÁ STRANA
+             */
+
+            if (currentPage === 50) {
+
+                const page =
+                    await renderPage(
+                        50,
+                        "single"
+                    );
+
+
+                book.appendChild(page);
+
+
+                pageNumber.textContent =
+                    "50 / 50";
+
+
+                return;
+
+            }
+
+
+            /*
+             * DVOJSTRANA
+             */
+
+            const spread =
+                document.createElement("div");
+
+
+            spread.className =
+                "spread";
+
+
+            const left =
+                await renderPage(
+                    currentPage,
+                    "left"
+                );
+
+
+            const right =
+                await renderPage(
+                    currentPage + 1,
+                    "right"
+                );
+
+
+            spread.appendChild(left);
+
+            spread.appendChild(right);
+
+            book.appendChild(spread);
+
+
+            pageNumber.textContent =
+                currentPage +
+                "–" +
+                (currentPage + 1) +
+                " / 50";
+
+        }
+
+
+        next.addEventListener(
+            "click",
+            async function () {
+
+                if (currentPage === 1) {
+
+                    currentPage = 2;
+
+                }
+
+                else if (currentPage < 48) {
+
+                    currentPage += 2;
+
+                }
+
+                else {
+
+                    currentPage = 50;
+
+                }
+
+
+                await showPages();
+
+            }
         );
 
-        const scaledViewport = page.getViewport({
-            scale: scale
-        });
 
-        const canvas = document.createElement("canvas");
+        previous.addEventListener(
+            "click",
+            async function () {
 
-        const context = canvas.getContext("2d");
+                if (currentPage === 50) {
 
-        canvas.width = scaledViewport.width;
-        canvas.height = scaledViewport.height;
+                    currentPage = 48;
 
-        book.innerHTML = "";
-        book.appendChild(canvas);
+                }
 
-        await page.render({
-            canvasContext: context,
-            viewport: scaledViewport
-        }).promise;
-    }
+                else if (currentPage > 2) {
 
-    loadPDF();
-</script>
+                    currentPage -= 2;
+
+                }
+
+                else {
+
+                    currentPage = 1;
+
+                }
+
+
+                await showPages();
+
+            }
+        );
+
+
+        document.addEventListener(
+            "keydown",
+            async function (event) {
+
+                if (
+                    event.key === "ArrowRight"
+                ) {
+
+                    next.click();
+
+                }
+
+
+                if (
+                    event.key === "ArrowLeft"
+                ) {
+
+                    previous.click();
+
+                }
+
+            }
+        );
+
+
+        loadPDF();
+
+    </script>
+
+
 </body>
+
 </html>
