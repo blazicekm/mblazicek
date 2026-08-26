@@ -48,7 +48,7 @@
 
 
         /*
-         * MAIN VIEWPORT
+         * VIEWPORT
          */
 
         #book-shell {
@@ -97,15 +97,12 @@
 
         .spread {
 
+            position: relative;
+
             display: flex;
 
-            flex-direction: row;
-
             align-items: stretch;
-
             justify-content: center;
-
-            width: max-content;
 
         }
 
@@ -117,8 +114,6 @@
         .page {
 
             position: relative;
-
-            display: block;
 
             flex: 0 0 auto;
 
@@ -142,7 +137,7 @@
 
 
         /*
-         * SINGLE PAGE
+         * SINGLE PAGE SHADOW
          */
 
         .page.single {
@@ -160,7 +155,7 @@
 
 
         /*
-         * LEFT PAGE
+         * LEFT PAGE SHADOW
          */
 
         .page.left {
@@ -187,7 +182,7 @@
 
 
         /*
-         * RIGHT PAGE
+         * RIGHT PAGE SHADOW
          */
 
         .page.right {
@@ -264,6 +259,41 @@
 
 
         /*
+         * MOBILE COMBINED SPREAD
+         */
+
+        .mobile-spread {
+
+            position: relative;
+
+            background: #ffffff;
+
+        }
+
+
+        .mobile-spread canvas {
+
+            display: block;
+
+        }
+
+
+        .mobile-link {
+
+            position: absolute;
+
+            display: block;
+
+            z-index: 50;
+
+            pointer-events: auto;
+
+            cursor: pointer;
+
+        }
+
+
+        /*
          * PDF LINKS
          */
 
@@ -293,7 +323,8 @@
         }
 
 
-        .annotation-link:hover {
+        .annotation-link:hover,
+        .mobile-link:hover {
 
             background:
                 rgba(
@@ -481,20 +512,6 @@
             }
 
 
-            .spread {
-
-                width: 94vw;
-
-            }
-
-
-            .page {
-
-                width: 47vw !important;
-
-            }
-
-
             #controls {
 
                 bottom: 10px;
@@ -509,29 +526,6 @@
                 right: 10px;
 
                 bottom: 10px;
-
-            }
-
-
-            .page.single {
-
-                width: 70vw !important;
-
-            }
-
-
-            .page.single,
-            .page.left,
-            .page.right {
-
-                box-shadow:
-                    0 5px 25px
-                    rgba(
-                        0,
-                        0,
-                        0,
-                        0.07
-                    );
 
             }
 
@@ -582,7 +576,6 @@
 
         </button>
 
-
     </div>
 
 
@@ -609,7 +602,6 @@
 
         </button>
 
-
     </div>
 
 
@@ -618,10 +610,6 @@
 
     <script>
 
-
-        /*
-         * PDF
-         */
 
         const PDF_URL =
             "../portfolio.pdf";
@@ -738,10 +726,6 @@
         let pinchStartMidY = 0;
 
 
-        /*
-         * RESIZE
-         */
-
         let resizeTimer;
 
 
@@ -757,11 +741,7 @@
 
 
         /*
-         * RENDER MULTIPLIER
-         *
-         * iPhone/iOS gets 2.5x.
-         * This is a compromise between
-         * sharpness and Safari memory usage.
+         * MOBILE RENDER QUALITY
          */
 
         function getRenderMultiplier() {
@@ -770,7 +750,7 @@
                 isMobile()
             ) {
 
-                return 2.5;
+                return 2.2;
 
             }
 
@@ -806,27 +786,30 @@
 
         function applyTransform() {
 
+            const x =
+                -50 +
+                (
+                    panX /
+                    bookShell.clientWidth
+                ) *
+                100;
+
+
+            const y =
+                -50 +
+                (
+                    panY /
+                    bookShell.clientHeight
+                ) *
+                100;
+
+
             book.style.transform =
                 "translate(" +
-                (
-                    -50 +
-                    (
-                        panX /
-                        bookShell.clientWidth
-                    ) *
-                    100
-                ) +
+                x +
                 "%, " +
-                (
-                    -50 +
-                    (
-                        panY /
-                        bookShell.clientHeight
-                    ) *
-                    100
-                ) +
-                "%) " +
-                "scale(" +
+                y +
+                "%) scale(" +
                 zoomLevel +
                 ")";
 
@@ -834,7 +817,7 @@
 
 
         /*
-         * CLAMP PAN
+         * LIMIT PAN
          */
 
         function clampPan() {
@@ -853,30 +836,22 @@
             }
 
 
-            const zoomExtra =
+            const extra =
                 zoomLevel - 1;
 
 
             const horizontalLimit =
-                Math.max(
-                    0,
-                    (
-                        bookShell.clientWidth *
-                        zoomExtra
-                    ) /
-                    2
-                );
+                (
+                    bookShell.clientWidth *
+                    extra
+                ) / 2;
 
 
             const verticalLimit =
-                Math.max(
-                    0,
-                    (
-                        bookShell.clientHeight *
-                        zoomExtra
-                    ) /
-                    2
-                );
+                (
+                    bookShell.clientHeight *
+                    extra
+                ) / 2;
 
 
             panX =
@@ -939,60 +914,39 @@
 
 
         /*
-         * SCALE
+         * CALCULATE PAGE SIZE
          */
 
         function calculateScale(
             viewport
         ) {
 
-            /*
-             * MOBILE
-             *
-             * Two pages must always
-             * fit exactly across
-             * the viewport.
-             */
+            let maxPageWidth;
+
 
             if (
                 isMobile()
             ) {
 
-                const maxPageWidth =
+                maxPageWidth =
                     window.innerWidth *
                     0.47;
 
+            }
 
-                const maxHeight =
-                    window.innerHeight *
-                    0.78;
+            else {
 
-
-                return Math.min(
-
-                    maxPageWidth /
-                        viewport.width,
-
-                    maxHeight /
-                        viewport.height
-
-                );
+                maxPageWidth =
+                    window.innerWidth *
+                    0.46;
 
             }
 
 
-            /*
-             * DESKTOP
-             */
-
-            const maxPageWidth =
-                window.innerWidth *
-                0.46;
-
-
             const maxHeight =
-                window.innerHeight *
-                0.86;
+                isMobile()
+                    ? window.innerHeight * 0.78
+                    : window.innerHeight * 0.86;
 
 
             return Math.min(
@@ -1009,10 +963,10 @@
 
 
         /*
-         * RENDER PAGE
+         * RENDER DESKTOP PAGE
          */
 
-        async function renderPage(
+        async function renderDesktopPage(
             pageNumberValue,
             position
         ) {
@@ -1042,10 +996,6 @@
                 });
 
 
-            /*
-             * Render resolution
-             */
-
             const renderScale =
                 visibleScale *
                 getRenderMultiplier() *
@@ -1058,10 +1008,6 @@
                         renderScale
                 });
 
-
-            /*
-             * PAGE ELEMENT
-             */
 
             const pageElement =
                 document.createElement(
@@ -1090,10 +1036,6 @@
                 "px";
 
 
-            /*
-             * CANVAS
-             */
-
             const canvas =
                 document.createElement(
                     "canvas"
@@ -1106,80 +1048,17 @@
                 );
 
 
-            /*
-             * Canvas dimensions
-             */
-
-            let canvasWidth =
+            canvas.width =
                 Math.floor(
                     renderViewport.width
                 );
 
 
-            let canvasHeight =
+            canvas.height =
                 Math.floor(
                     renderViewport.height
                 );
 
-
-            /*
-             * iOS safety limit
-             *
-             * Keep each canvas under
-             * approximately 12 million
-             * pixels.
-             */
-
-            const maxCanvasPixels =
-                isMobile()
-                    ? 12000000
-                    : 18000000;
-
-
-            const canvasPixels =
-                canvasWidth *
-                canvasHeight;
-
-
-            if (
-                canvasPixels >
-                maxCanvasPixels
-            ) {
-
-                const reduction =
-                    Math.sqrt(
-                        maxCanvasPixels /
-                        canvasPixels
-                    );
-
-
-                canvasWidth =
-                    Math.floor(
-                        canvasWidth *
-                        reduction
-                    );
-
-
-                canvasHeight =
-                    Math.floor(
-                        canvasHeight *
-                        reduction
-                    );
-
-            }
-
-
-            canvas.width =
-                canvasWidth;
-
-
-            canvas.height =
-                canvasHeight;
-
-
-            /*
-             * Display size
-             */
 
             canvas.style.width =
                 (
@@ -1202,41 +1081,13 @@
             );
 
 
-            /*
-             * Actual render viewport
-             */
-
-            const actualScaleX =
-                canvasWidth /
-                visibleViewport.width;
-
-
-            const actualScaleY =
-                canvasHeight /
-                visibleViewport.height;
-
-
-            const actualScale =
-                Math.min(
-                    actualScaleX,
-                    actualScaleY
-                );
-
-
-            const actualViewport =
-                page.getViewport({
-                    scale:
-                        actualScale
-                });
-
-
             await page.render({
 
                 canvasContext:
                     context,
 
                 viewport:
-                    actualViewport
+                    renderViewport
 
             }).promise;
 
@@ -1258,6 +1109,98 @@
             pageElement.appendChild(
                 annotationLayer
             );
+
+
+            await addAnnotations(
+
+                page,
+                annotationLayer,
+                visibleScale *
+                zoomLevel
+
+            );
+
+
+            /*
+             * PAGE CLICK
+             */
+
+            pageElement.addEventListener(
+                "click",
+                function(event) {
+
+
+                    if (
+                        event.target.closest(
+                            ".annotation-link"
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (
+                        pageNumberValue === 1
+                    ) {
+
+                        nextPage();
+
+                        return;
+
+                    }
+
+
+                    if (
+                        pageNumberValue === 50
+                    ) {
+
+                        previousPage();
+
+                        return;
+
+                    }
+
+
+                    if (
+                        pageNumberValue % 2 === 0
+                    ) {
+
+                        previousPage();
+
+                    }
+
+                    else {
+
+                        nextPage();
+
+                    }
+
+                }
+            );
+
+
+            return pageElement;
+
+        }
+
+
+        /*
+         * ADD PDF ANNOTATIONS
+         */
+
+        async function addAnnotations(
+            page,
+            layer,
+            displayScale
+        ) {
+
+
+            const viewport =
+                page.getViewport({
+                    scale: displayScale
+                });
 
 
             const annotations =
@@ -1286,16 +1229,13 @@
 
                 const left =
                     rect[0] *
-                    visibleScale *
-                    zoomLevel;
+                    displayScale;
 
 
                 const top =
-                    visibleViewport.height *
-                    zoomLevel -
+                    viewport.height -
                     rect[3] *
-                    visibleScale *
-                    zoomLevel;
+                    displayScale;
 
 
                 const width =
@@ -1303,8 +1243,7 @@
                         rect[2] -
                         rect[0]
                     ) *
-                    visibleScale *
-                    zoomLevel;
+                    displayScale;
 
 
                 const height =
@@ -1312,8 +1251,7 @@
                         rect[3] -
                         rect[1]
                     ) *
-                    visibleScale *
-                    zoomLevel;
+                    displayScale;
 
 
                 const link =
@@ -1342,10 +1280,6 @@
                     height + "px";
 
 
-                /*
-                 * EXTERNAL LINK
-                 */
-
                 if (
                     annotation.url
                 ) {
@@ -1361,10 +1295,6 @@
 
                 }
 
-
-                /*
-                 * INTERNAL LINK
-                 */
 
                 else if (
                     annotation.dest
@@ -1422,10 +1352,11 @@
 
                             }
 
-                            catch (error) {
+                            catch (
+                                error
+                            ) {
 
                                 console.error(
-                                    "Internal PDF link error:",
                                     error
                                 );
 
@@ -1437,25 +1368,410 @@
                 }
 
 
-                annotationLayer.appendChild(
+                layer.appendChild(
                     link
                 );
 
             }
 
+        }
+
+
+        /*
+         * MOBILE COMBINED SPREAD
+         *
+         * Both PDF pages are drawn
+         * into ONE canvas.
+         */
+
+        async function renderMobileSpread(
+            leftPageNumber,
+            rightPageNumber
+        ) {
+
+            const leftPage =
+                await pdf.getPage(
+                    leftPageNumber
+                );
+
+
+            const rightPage =
+                await pdf.getPage(
+                    rightPageNumber
+                );
+
+
+            const leftBase =
+                leftPage.getViewport({
+                    scale: 1
+                });
+
+
+            const rightBase =
+                rightPage.getViewport({
+                    scale: 1
+                });
+
+
+            const pageRatio =
+                leftBase.width /
+                rightBase.width;
+
+
+            const availableWidth =
+                window.innerWidth *
+                0.94;
+
+
+            const pageWidth =
+                availableWidth / 2;
+
+
+            const pageScale =
+                pageWidth /
+                leftBase.width;
+
+
+            const leftViewport =
+                leftPage.getViewport({
+                    scale:
+                        pageScale
+                });
+
+
+            const rightViewport =
+                rightPage.getViewport({
+                    scale:
+                        pageScale
+                });
+
+
+            const pageHeight =
+                Math.max(
+                    leftViewport.height,
+                    rightViewport.height
+                );
+
 
             /*
-             * PAGE CLICK
+             * Render resolution
              */
 
-            pageElement.addEventListener(
+            const renderMultiplier =
+                getRenderMultiplier() *
+                zoomLevel;
+
+
+            let canvasWidth =
+                Math.floor(
+                    (
+                        leftViewport.width +
+                        rightViewport.width
+                    ) *
+                    renderMultiplier
+                );
+
+
+            let canvasHeight =
+                Math.floor(
+                    pageHeight *
+                    renderMultiplier
+                );
+
+
+            /*
+             * iOS canvas protection
+             */
+
+            const maxPixels =
+                12500000;
+
+
+            let totalPixels =
+                canvasWidth *
+                canvasHeight;
+
+
+            if (
+                totalPixels >
+                maxPixels
+            ) {
+
+                const reduction =
+                    Math.sqrt(
+                        maxPixels /
+                        totalPixels
+                    );
+
+
+                canvasWidth =
+                    Math.floor(
+                        canvasWidth *
+                        reduction
+                    );
+
+
+                canvasHeight =
+                    Math.floor(
+                        canvasHeight *
+                        reduction
+                    );
+
+            }
+
+
+            const actualMultiplierX =
+                canvasWidth /
+                (
+                    leftViewport.width +
+                    rightViewport.width
+                );
+
+
+            const actualMultiplierY =
+                canvasHeight /
+                pageHeight;
+
+
+            const actualMultiplier =
+                Math.min(
+                    actualMultiplierX,
+                    actualMultiplierY
+                );
+
+
+            /*
+             * Container
+             */
+
+            const container =
+                document.createElement(
+                    "div"
+                );
+
+
+            container.className =
+                "mobile-spread";
+
+
+            container.style.width =
+                (
+                    availableWidth *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            container.style.height =
+                (
+                    pageHeight *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            /*
+             * Canvas
+             */
+
+            const canvas =
+                document.createElement(
+                    "canvas"
+                );
+
+
+            const context =
+                canvas.getContext(
+                    "2d"
+                );
+
+
+            canvas.width =
+                canvasWidth;
+
+
+            canvas.height =
+                canvasHeight;
+
+
+            canvas.style.width =
+                (
+                    availableWidth *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            canvas.style.height =
+                (
+                    pageHeight *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            container.appendChild(
+                canvas
+            );
+
+
+            /*
+             * Render left page
+             */
+
+            const leftRenderViewport =
+                leftPage.getViewport({
+                    scale:
+                        pageScale *
+                        actualMultiplier
+                });
+
+
+            await leftPage.render({
+
+                canvasContext:
+                    context,
+
+                viewport:
+                    leftRenderViewport,
+
+                transform: [
+                    1,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0
+                ]
+
+            }).promise;
+
+
+            /*
+             * Render right page
+             *
+             * We use the same PDF page
+             * render operation but move
+             * the canvas context to the
+             * right side first.
+             */
+
+            context.save();
+
+
+            context.translate(
+                leftRenderViewport.width,
+                0
+            );
+
+
+            const rightRenderViewport =
+                rightPage.getViewport({
+                    scale:
+                        pageScale *
+                        actualMultiplier
+                });
+
+
+            await rightPage.render({
+
+                canvasContext:
+                    context,
+
+                viewport:
+                    rightRenderViewport,
+
+                transform: [
+                    1,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0
+                ]
+
+            }).promise;
+
+
+            context.restore();
+
+
+            /*
+             * LINK LAYERS
+             */
+
+            await addMobileAnnotations(
+
+                leftPage,
+                container,
+                pageScale *
+                zoomLevel,
+                0
+
+            );
+
+
+            await addMobileAnnotations(
+
+                rightPage,
+                container,
+                pageScale *
+                zoomLevel,
+                leftViewport.width *
+                zoomLevel
+
+            );
+
+
+            /*
+             * CLICK AREAS
+             */
+
+            const leftClick =
+                document.createElement(
+                    "div"
+                );
+
+
+            leftClick.className =
+                "mobile-link";
+
+
+            leftClick.style.left =
+                "0";
+
+
+            leftClick.style.top =
+                "0";
+
+
+            leftClick.style.width =
+                (
+                    leftViewport.width *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            leftClick.style.height =
+                (
+                    pageHeight *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            leftClick.style.zIndex =
+                "5";
+
+
+            leftClick.addEventListener(
                 "click",
                 function(event) {
 
-
                     if (
                         event.target.closest(
-                            ".annotation-link"
+                            ".real-mobile-link"
                         )
                     ) {
 
@@ -1464,80 +1780,292 @@
                     }
 
 
-                    /*
-                     * When zoomed, a click
-                     * shouldn't turn into
-                     * page navigation.
-                     */
-
-                    if (
-                        zoomLevel > 1 &&
-                        isMobile()
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    /*
-                     * COVER
-                     */
-
-                    if (
-                        pageNumberValue === 1
-                    ) {
-
-                        nextPage();
-
-                        return;
-
-                    }
-
-
-                    /*
-                     * BACK COVER
-                     */
-
-                    if (
-                        pageNumberValue === 50
-                    ) {
-
-                        previousPage();
-
-                        return;
-
-                    }
-
-
-                    /*
-                     * LEFT PAGE
-                     */
-
-                    if (
-                        pageNumberValue % 2 === 0
-                    ) {
-
-                        previousPage();
-
-                    }
-
-
-                    /*
-                     * RIGHT PAGE
-                     */
-
-                    else {
-
-                        nextPage();
-
-                    }
+                    previousPage();
 
                 }
             );
 
 
-            return pageElement;
+            const rightClick =
+                document.createElement(
+                    "div"
+                );
+
+
+            rightClick.className =
+                "mobile-link";
+
+
+            rightClick.style.left =
+                (
+                    leftViewport.width *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            rightClick.style.top =
+                "0";
+
+
+            rightClick.style.width =
+                (
+                    rightViewport.width *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            rightClick.style.height =
+                (
+                    pageHeight *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            rightClick.style.zIndex =
+                "5";
+
+
+            rightClick.addEventListener(
+                "click",
+                function(event) {
+
+                    if (
+                        event.target.closest(
+                            ".real-mobile-link"
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    nextPage();
+
+                }
+            );
+
+
+            /*
+             * Add click areas beneath
+             * real PDF hyperlinks.
+             */
+
+            container.appendChild(
+                leftClick
+            );
+
+
+            container.appendChild(
+                rightClick
+            );
+
+
+            return {
+
+                container:
+                    container,
+
+                label:
+                    leftPageNumber +
+                    "–" +
+                    rightPageNumber +
+                    " / 50"
+
+            };
+
+        }
+
+
+        /*
+         * MOBILE ANNOTATIONS
+         */
+
+        async function addMobileAnnotations(
+            page,
+            container,
+            displayScale,
+            offsetX
+        ) {
+
+
+            const viewport =
+                page.getViewport({
+                    scale:
+                        displayScale
+                });
+
+
+            const annotations =
+                await page.getAnnotations();
+
+
+            for (
+                const annotation
+                of annotations
+            ) {
+
+
+                if (
+                    annotation.subtype !==
+                    "Link"
+                ) {
+
+                    continue;
+
+                }
+
+
+                const rect =
+                    annotation.rect;
+
+
+                const link =
+                    document.createElement(
+                        "a"
+                    );
+
+
+                link.className =
+                    "mobile-link real-mobile-link";
+
+
+                link.style.left =
+                    (
+                        offsetX +
+                        rect[0] *
+                        displayScale
+                    ) +
+                    "px";
+
+
+                link.style.top =
+                    (
+                        viewport.height -
+                        rect[3] *
+                        displayScale
+                    ) +
+                    "px";
+
+
+                link.style.width =
+                    (
+                        rect[2] -
+                        rect[0]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                link.style.height =
+                    (
+                        rect[3] -
+                        rect[1]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                link.style.zIndex =
+                    "30";
+
+
+                if (
+                    annotation.url
+                ) {
+
+                    link.href =
+                        annotation.url;
+
+                    link.target =
+                        "_blank";
+
+                    link.rel =
+                        "noopener noreferrer";
+
+                }
+
+
+                else if (
+                    annotation.dest
+                ) {
+
+                    link.href =
+                        "#";
+
+
+                    link.addEventListener(
+                        "click",
+                        async function(event) {
+
+                            event.preventDefault();
+
+                            event.stopPropagation();
+
+
+                            try {
+
+                                const destination =
+                                    await pdf
+                                        .getDestination(
+                                            annotation.dest
+                                        );
+
+
+                                if (
+                                    !destination
+                                ) {
+
+                                    return;
+
+                                }
+
+
+                                const pageRef =
+                                    destination[0];
+
+
+                                const index =
+                                    await pdf
+                                        .getPageIndex(
+                                            pageRef
+                                        );
+
+
+                                const target =
+                                    index + 1;
+
+
+                                await navigateTo(
+                                    target
+                                );
+
+                            }
+
+                            catch (
+                                error
+                            ) {
+
+                                console.error(
+                                    error
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                container.appendChild(
+                    link
+                );
+
+            }
 
         }
 
@@ -1549,22 +2077,113 @@
         async function buildPages() {
 
 
+            /*
+             * MOBILE
+             *
+             * Cover / back cover
+             * remain single.
+             */
+
+            if (
+                isMobile()
+            ) {
+
+
+                if (
+                    currentPage === 1
+                ) {
+
+                    const page =
+                        await renderDesktopPage(
+                            1,
+                            "single"
+                        );
+
+
+                    const container =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    container.appendChild(
+                        page
+                    );
+
+
+                    return {
+
+                        container:
+                            container,
+
+                        label:
+                            "1 / 50"
+
+                    };
+
+                }
+
+
+                if (
+                    currentPage === 50
+                ) {
+
+                    const page =
+                        await renderDesktopPage(
+                            50,
+                            "single"
+                        );
+
+
+                    const container =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    container.appendChild(
+                        page
+                    );
+
+
+                    return {
+
+                        container:
+                            container,
+
+                        label:
+                            "50 / 50"
+
+                    };
+
+                }
+
+
+                return await
+                    renderMobileSpread(
+                        currentPage,
+                        currentPage + 1
+                    );
+
+            }
+
+
+            /*
+             * DESKTOP
+             */
+
             const container =
                 document.createElement(
                     "div"
                 );
 
 
-            /*
-             * COVER
-             */
-
             if (
                 currentPage === 1
             ) {
 
                 const page =
-                    await renderPage(
+                    await renderDesktopPage(
                         1,
                         "single"
                     );
@@ -1588,16 +2207,12 @@
             }
 
 
-            /*
-             * BACK COVER
-             */
-
             if (
                 currentPage === 50
             ) {
 
                 const page =
-                    await renderPage(
+                    await renderDesktopPage(
                         50,
                         "single"
                     );
@@ -1621,23 +2236,19 @@
             }
 
 
-            /*
-             * SPREAD
-             */
-
             container.className =
                 "spread";
 
 
             const left =
-                await renderPage(
+                await renderDesktopPage(
                     currentPage,
                     "left"
                 );
 
 
             const right =
-                await renderPage(
+                await renderDesktopPage(
                     currentPage + 1,
                     "right"
                 );
@@ -1672,28 +2283,15 @@
 
 
         /*
-         * SHOW PAGES
+         * SHOW
          */
 
         async function showPages() {
 
 
-            /*
-             * Build first.
-             *
-             * The old spread remains
-             * visible while PDF.js
-             * renders the new spread.
-             */
-
             const result =
                 await buildPages();
 
-
-            /*
-             * Replace only when
-             * everything is ready.
-             */
 
             book.replaceChildren(
                 result.container
@@ -1712,7 +2310,7 @@
 
 
         /*
-         * NAVIGATE TO
+         * NAVIGATE
          */
 
         async function navigateTo(
@@ -1738,12 +2336,6 @@
                     )
                 );
 
-
-            /*
-             * Desktop:
-             * internal links land on
-             * the left page of a spread.
-             */
 
             if (
                 !isMobile() &&
@@ -1912,7 +2504,7 @@
 
 
         /*
-         * SET ZOOM
+         * ZOOM
          */
 
         async function setZoom(
@@ -1920,7 +2512,7 @@
         ) {
 
 
-            value =
+            zoomLevel =
                 Math.max(
                     1,
                     Math.min(
@@ -1928,10 +2520,6 @@
                         value
                     )
                 );
-
-
-            zoomLevel =
-                value;
 
 
             if (
@@ -1999,7 +2587,7 @@
 
 
         /*
-         * POINTER DOWN
+         * POINTER DRAG
          */
 
         bookShell.addEventListener(
@@ -2083,24 +2671,20 @@
                 }
 
 
-                const dx =
-                    event.clientX -
-                    dragStartX;
-
-
-                const dy =
-                    event.clientY -
-                    dragStartY;
-
-
                 panX =
                     dragStartPanX +
-                    dx;
+                    (
+                        event.clientX -
+                        dragStartX
+                    );
 
 
                 panY =
                     dragStartPanY +
-                    dy;
+                    (
+                        event.clientY -
+                        dragStartY
+                    );
 
 
                 clampPan();
@@ -2133,20 +2717,6 @@
                 catch (
                     error
                 ) {}
-
-            }
-        );
-
-
-        /*
-         * POINTER CANCEL
-         */
-
-        bookShell.addEventListener(
-            "pointercancel",
-            function() {
-
-                dragging = false;
 
             }
         );
@@ -2237,15 +2807,7 @@
 
 
                 if (
-                    event.touches.length !== 2
-                ) {
-
-                    return;
-
-                }
-
-
-                if (
+                    event.touches.length !== 2 ||
                     !pinchStartDistance
                 ) {
 
@@ -2287,17 +2849,13 @@
                     pinchStartDistance;
 
 
-                let newZoom =
-                    pinchStartZoom *
-                    ratio;
-
-
-                newZoom =
+                zoomLevel =
                     Math.max(
                         1,
                         Math.min(
                             getMaxZoom(),
-                            newZoom
+                            pinchStartZoom *
+                            ratio
                         )
                     );
 
@@ -2330,10 +2888,6 @@
                         midY -
                         pinchStartMidY
                     );
-
-
-                zoomLevel =
-                    newZoom;
 
 
                 clampPan();
@@ -2388,11 +2942,6 @@
                 applyTransform();
 
 
-                /*
-                 * Re-render at final
-                 * resolution.
-                 */
-
                 await showPages();
 
             }
@@ -2403,18 +2952,6 @@
          * BUTTONS
          */
 
-        next.addEventListener(
-            "click",
-            function(event) {
-
-                event.stopPropagation();
-
-                nextPage();
-
-            }
-        );
-
-
         previous.addEventListener(
             "click",
             function(event) {
@@ -2422,6 +2959,18 @@
                 event.stopPropagation();
 
                 previousPage();
+
+            }
+        );
+
+
+        next.addEventListener(
+            "click",
+            function(event) {
+
+                event.stopPropagation();
+
+                nextPage();
 
             }
         );
@@ -2520,13 +3069,6 @@
 
                             panX = 0;
                             panY = 0;
-
-
-                            zoomLevel = 1;
-
-
-                            zoomResetButton.textContent =
-                                "1×";
 
 
                             await showPages();
