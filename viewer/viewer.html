@@ -46,97 +46,85 @@
             display: flex;
             align-items: center;
             justify-content: center;
-
-            perspective: 2200px;
         }
 
 
-        /*
-         * SPREAD
-         */
-
         .spread {
-
             position: relative;
 
             display: flex;
 
             align-items: stretch;
             justify-content: center;
-
-            transform-style: preserve-3d;
-
         }
 
 
-        /*
-         * PAGE
-         */
-
         .page {
-
             position: relative;
 
             background: #ffffff;
 
             overflow: hidden;
 
-            transform-style: preserve-3d;
-
             cursor: pointer;
-
         }
 
 
         .page canvas {
-
             display: block;
 
             width: 100%;
             height: 100%;
-
         }
 
 
         /*
-         * PAGE SHADOWS
+         * SINGLE PAGE
          */
 
         .page.single {
 
             box-shadow:
-                0 10px 35px
-                rgba(0, 0, 0, 0.14);
-
-        }
-
-
-        .page.left {
-
-            box-shadow:
-                -5px 10px 35px
-                rgba(0, 0, 0, 0.10),
-
-                inset -10px 0 18px -15px
-                rgba(0, 0, 0, 0.45);
-
-        }
-
-
-        .page.right {
-
-            box-shadow:
-                5px 10px 35px
-                rgba(0, 0, 0, 0.10),
-
-                inset 10px 0 18px -15px
-                rgba(0, 0, 0, 0.45);
+                0 8px 30px
+                rgba(0, 0, 0, 0.12);
 
         }
 
 
         /*
-         * CENTER BOOK SHADOW
+         * LEFT PAGE
+         */
+
+        .page.left {
+
+            box-shadow:
+                -4px 8px 30px
+                rgba(0, 0, 0, 0.10),
+
+                inset -8px 0 15px -15px
+                rgba(0, 0, 0, 0.40);
+
+        }
+
+
+        /*
+         * RIGHT PAGE
+         */
+
+        .page.right {
+
+            box-shadow:
+                4px 8px 30px
+                rgba(0, 0, 0, 0.10),
+
+                inset 8px 0 15px -15px
+                rgba(0, 0, 0, 0.40);
+
+        }
+
+
+        /*
+         * CENTER SHADOW
          */
 
         .spread::after {
@@ -158,9 +146,9 @@
             background:
                 linear-gradient(
                     to right,
-                    rgba(0,0,0,0.00),
-                    rgba(0,0,0,0.10),
-                    rgba(0,0,0,0.00)
+                    rgba(0, 0, 0, 0),
+                    rgba(0, 0, 0, 0.10),
+                    rgba(0, 0, 0, 0)
                 );
 
             pointer-events: none;
@@ -171,83 +159,7 @@
 
 
         /*
-         * ANIMATION
-         */
-
-        .page.flip-left {
-
-            transform-origin: right center;
-
-            animation:
-                flipLeft
-                0.75s
-                cubic-bezier(
-                    0.4,
-                    0,
-                    0.2,
-                    1
-                );
-
-        }
-
-
-        .page.flip-right {
-
-            transform-origin: left center;
-
-            animation:
-                flipRight
-                0.75s
-                cubic-bezier(
-                    0.4,
-                    0,
-                    0.2,
-                    1
-                );
-
-        }
-
-
-        @keyframes flipLeft {
-
-            0% {
-
-                transform:
-                    rotateY(0deg);
-
-            }
-
-            100% {
-
-                transform:
-                    rotateY(-180deg);
-
-            }
-
-        }
-
-
-        @keyframes flipRight {
-
-            0% {
-
-                transform:
-                    rotateY(0deg);
-
-            }
-
-            100% {
-
-                transform:
-                    rotateY(180deg);
-
-            }
-
-        }
-
-
-        /*
-         * LINK LAYER
+         * PDF LINKS
          */
 
         .annotation-layer {
@@ -338,7 +250,7 @@
 
             padding: 5px;
 
-            color: inherit;
+            color: #333333;
 
             font-family: inherit;
 
@@ -507,8 +419,6 @@
 
         let currentPage = 1;
 
-        let animating = false;
-
 
         /*
          * LOAD PDF
@@ -555,6 +465,7 @@
 
             let maxWidth;
 
+
             /*
              * SINGLE PAGE
              */
@@ -570,8 +481,9 @@
 
             }
 
+
             /*
-             * SPREAD
+             * DOUBLE PAGE
              */
 
             else {
@@ -630,8 +542,7 @@
 
             const scaledViewport =
                 page.getViewport({
-                    scale:
-                        scale
+                    scale: scale
                 });
 
 
@@ -655,6 +566,10 @@
                 scaledViewport.height +
                 "px";
 
+
+            /*
+             * CANVAS
+             */
 
             const canvas =
                 document.createElement(
@@ -693,7 +608,7 @@
 
 
             /*
-             * PDF LINKS
+             * PDF ANNOTATIONS
              */
 
             const annotationLayer =
@@ -870,11 +785,7 @@
                                     target === 1
                                 ) {
 
-                                    await navigateTo(
-                                        1
-                                    );
-
-                                    return;
+                                    currentPage = 1;
 
                                 }
 
@@ -883,15 +794,11 @@
                                  * BACK COVER
                                  */
 
-                                if (
+                                else if (
                                     target === 50
                                 ) {
 
-                                    await navigateTo(
-                                        50
-                                    );
-
-                                    return;
+                                    currentPage = 50;
 
                                 }
 
@@ -900,23 +807,24 @@
                                  * NORMAL SPREAD
                                  */
 
-                                if (
+                                else if (
                                     target % 2 === 0
                                 ) {
 
-                                    await navigateTo(
-                                        target
-                                    );
+                                    currentPage =
+                                        target;
 
                                 }
 
                                 else {
 
-                                    await navigateTo(
-                                        target - 1
-                                    );
+                                    currentPage =
+                                        target - 1;
 
                                 }
+
+
+                                await showPages();
 
                             }
 
@@ -942,13 +850,18 @@
 
 
             /*
-             * CLICK NAVIGATION
+             * CLICK ON PAGE
              */
 
             pageElement.addEventListener(
                 "click",
                 function(event) {
 
+
+                    /*
+                     * Don't navigate if
+                     * clicking a PDF link.
+                     */
 
                     if (
                         event.target.closest(
@@ -993,6 +906,8 @@
 
                     /*
                      * LEFT PAGE
+                     *
+                     * 2, 4, 6, 8...
                      */
 
                     if (
@@ -1006,6 +921,8 @@
 
                     /*
                      * RIGHT PAGE
+                     *
+                     * 3, 5, 7, 9...
                      */
 
                     else {
@@ -1024,7 +941,7 @@
 
 
         /*
-         * SHOW PAGES
+         * SHOW CURRENT PAGES
          */
 
         async function showPages() {
@@ -1034,7 +951,7 @@
 
 
             /*
-             * COVER
+             * FIRST PAGE
              */
 
             if (
@@ -1063,7 +980,7 @@
 
 
             /*
-             * BACK COVER
+             * LAST PAGE
              */
 
             if (
@@ -1092,7 +1009,7 @@
 
 
             /*
-             * SPREAD
+             * DOUBLE PAGE
              */
 
             const spread =
@@ -1146,24 +1063,33 @@
 
 
         /*
-         * NAVIGATE
+         * NEXT PAGE
          */
 
-        async function navigateTo(
-            target
-        ) {
+        async function nextPage() {
+
 
             if (
-                animating
+                currentPage === 1
             ) {
 
-                return;
+                currentPage = 2;
 
             }
 
+            else if (
+                currentPage < 48
+            ) {
 
-            currentPage =
-                target;
+                currentPage += 2;
+
+            }
+
+            else {
+
+                currentPage = 50;
+
+            }
 
 
             await showPages();
@@ -1172,292 +1098,36 @@
 
 
         /*
-         * NEXT
-         */
-
-        async function nextPage() {
-
-
-            if (
-                animating
-            ) {
-
-                return;
-
-            }
-
-
-            animating = true;
-
-
-            /*
-             * COVER → SPREAD
-             */
-
-            if (
-                currentPage === 1
-            ) {
-
-                const oldPage =
-                    book.querySelector(
-                        ".page"
-                    );
-
-
-                if (
-                    oldPage
-                ) {
-
-                    oldPage.classList.add(
-                        "flip-right"
-                    );
-
-
-                    await sleep(
-                        650
-                    );
-
-                }
-
-
-                currentPage = 2;
-
-
-                await showPages();
-
-            }
-
-
-            /*
-             * SPREAD → NEXT SPREAD
-             */
-
-            else if (
-                currentPage < 48
-            ) {
-
-                const rightPage =
-                    book.querySelector(
-                        ".page.right"
-                    );
-
-
-                if (
-                    rightPage
-                ) {
-
-                    rightPage.classList.add(
-                        "flip-right"
-                    );
-
-
-                    await sleep(
-                        650
-                    );
-
-                }
-
-
-                currentPage += 2;
-
-
-                await showPages();
-
-            }
-
-
-            /*
-             * LAST PAGE
-             */
-
-            else {
-
-                const rightPage =
-                    book.querySelector(
-                        ".page.right"
-                    );
-
-
-                if (
-                    rightPage
-                ) {
-
-                    rightPage.classList.add(
-                        "flip-right"
-                    );
-
-
-                    await sleep(
-                        650
-                    );
-
-                }
-
-
-                currentPage = 50;
-
-
-                await showPages();
-
-            }
-
-
-            animating = false;
-
-        }
-
-
-        /*
-         * PREVIOUS
+         * PREVIOUS PAGE
          */
 
         async function previousPage() {
 
 
             if (
-                animating
-            ) {
-
-                return;
-
-            }
-
-
-            animating = true;
-
-
-            /*
-             * BACK COVER → SPREAD
-             */
-
-            if (
                 currentPage === 50
             ) {
 
-                const oldPage =
-                    book.querySelector(
-                        ".page"
-                    );
-
-
-                if (
-                    oldPage
-                ) {
-
-                    oldPage.classList.add(
-                        "flip-left"
-                    );
-
-
-                    await sleep(
-                        650
-                    );
-
-                }
-
-
                 currentPage = 48;
 
-
-                await showPages();
-
             }
-
-
-            /*
-             * SPREAD → PREVIOUS SPREAD
-             */
 
             else if (
                 currentPage > 2
             ) {
 
-                const leftPage =
-                    book.querySelector(
-                        ".page.left"
-                    );
-
-
-                if (
-                    leftPage
-                ) {
-
-                    leftPage.classList.add(
-                        "flip-left"
-                    );
-
-
-                    await sleep(
-                        650
-                    );
-
-                }
-
-
                 currentPage -= 2;
 
-
-                await showPages();
-
             }
-
-
-            /*
-             * SPREAD → COVER
-             */
 
             else {
 
-                const leftPage =
-                    book.querySelector(
-                        ".page.left"
-                    );
-
-
-                if (
-                    leftPage
-                ) {
-
-                    leftPage.classList.add(
-                        "flip-left"
-                    );
-
-
-                    await sleep(
-                        650
-                    );
-
-                }
-
-
                 currentPage = 1;
-
-
-                await showPages();
 
             }
 
 
-            animating = false;
-
-        }
-
-
-        /*
-         * SLEEP
-         */
-
-        function sleep(
-            milliseconds
-        ) {
-
-            return new Promise(
-                resolve =>
-                    setTimeout(
-                        resolve,
-                        milliseconds
-                    )
-            );
+            await showPages();
 
         }
 
@@ -1497,7 +1167,6 @@
         document.addEventListener(
             "keydown",
             function(event) {
-
 
                 if (
                     event.key ===
