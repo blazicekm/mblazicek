@@ -7,7 +7,7 @@
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
     >
 
     <title>Matúš Blažíček — Portfolio</title>
@@ -42,6 +42,8 @@
             align-items: center;
             justify-content: center;
 
+            touch-action: none;
+
         }
 
 
@@ -56,6 +58,23 @@
 
             align-items: center;
             justify-content: center;
+
+            transform-origin: center center;
+
+        }
+
+
+        #book-shell {
+
+            width: 100%;
+            height: 100%;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            overflow: visible;
 
         }
 
@@ -81,6 +100,8 @@
             overflow: hidden;
 
             cursor: pointer;
+
+            flex-shrink: 0;
 
         }
 
@@ -257,6 +278,8 @@
 
             z-index: 100;
 
+            user-select: none;
+
         }
 
 
@@ -297,6 +320,60 @@
 
 
         /*
+         * ZOOM CONTROLS
+         */
+
+        #zoomControls {
+
+            position: fixed;
+
+            right: 20px;
+            bottom: 20px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            z-index: 100;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+        }
+
+
+        #zoomControls button {
+
+            width: 28px;
+            height: 28px;
+
+            padding: 0;
+
+            border: none;
+
+            background: transparent;
+
+            color: #333333;
+
+            font-size: 16px;
+
+            cursor: pointer;
+
+        }
+
+
+        #zoomControls button:hover {
+
+            opacity: 0.45;
+
+        }
+
+
+        /*
          * LOADING
          */
 
@@ -332,14 +409,37 @@
 
                 width: 96vw;
 
-                height: 84vh;
+                height: 82vh;
 
             }
 
 
             #controls {
 
-                bottom: 12px;
+                bottom: 10px;
+
+                gap: 14px;
+
+            }
+
+
+            #zoomControls {
+
+                right: 10px;
+
+                bottom: 10px;
+
+            }
+
+
+            .page.single,
+            .page.left,
+            .page.right {
+
+                box-shadow:
+
+                    0 5px 25px
+                    rgba(0, 0, 0, 0.07);
 
             }
 
@@ -360,7 +460,11 @@
     </div>
 
 
-    <div id="book"></div>
+    <div id="book-shell">
+
+        <div id="book"></div>
+
+    </div>
 
 
     <div id="controls">
@@ -390,11 +494,42 @@
     </div>
 
 
+    <div id="zoomControls">
+
+
+        <button id="zoomOut">
+
+            −
+
+        </button>
+
+
+        <button id="zoomReset">
+
+            1×
+
+        </button>
+
+
+        <button id="zoomIn">
+
+            +
+
+        </button>
+
+
+    </div>
+
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 
     <script>
 
+
+        /*
+         * PDF
+         */
 
         const PDF_URL =
             "../portfolio.pdf";
@@ -403,6 +538,10 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
+
+        /*
+         * ELEMENTS
+         */
 
         const loading =
             document.getElementById(
@@ -434,11 +573,109 @@
             );
 
 
+        const zoomInButton =
+            document.getElementById(
+                "zoomIn"
+            );
+
+
+        const zoomOutButton =
+            document.getElementById(
+                "zoomOut"
+            );
+
+
+        const zoomResetButton =
+            document.getElementById(
+                "zoomReset"
+            );
+
+
+        /*
+         * STATE
+         */
+
         let pdf;
 
         let currentPage = 1;
 
         let changingPage = false;
+
+        let zoomLevel = 1;
+
+        let resizeTimer;
+
+
+        /*
+         * TOUCH ZOOM STATE
+         */
+
+        let pinchStartDistance = null;
+
+        let pinchStartZoom = 1;
+
+
+        /*
+         * MOBILE
+         */
+
+        function isMobile() {
+
+            return window.innerWidth <= 700;
+
+        }
+
+
+        /*
+         * BASE RENDER SCALE
+         *
+         * The PDF is intentionally
+         * rendered larger than its
+         * display size.
+         */
+
+        function getRenderMultiplier() {
+
+            if (
+                isMobile()
+            ) {
+
+                /*
+                 * 3x on mobile
+                 */
+
+                return 3;
+
+            }
+
+
+            /*
+             * 2x on desktop
+             */
+
+            return 2;
+
+        }
+
+
+        /*
+         * MAX ZOOM
+         */
+
+        function getMaxZoom() {
+
+            if (
+                isMobile()
+            ) {
+
+                return 3;
+
+            }
+
+
+            return 2.5;
+
+        }
 
 
         /*
@@ -469,7 +706,9 @@
                 loading.textContent =
                     "Error loading portfolio";
 
-                console.error(error);
+                console.error(
+                    error
+                );
 
             }
 
@@ -478,42 +717,55 @@
 
         /*
          * SCALE
+         *
+         * This calculates the
+         * visible page size.
          */
 
         function calculateScale(
             viewport
         ) {
 
-            let maxWidth;
-
-
             /*
-             * SINGLE PAGE
+             * Mobile:
+             *
+             * still two pages.
              */
 
             if (
-                currentPage === 1 ||
-                currentPage === 50
+                isMobile()
             ) {
 
-                maxWidth =
+                const maxPageWidth =
                     window.innerWidth *
-                    0.65;
+                    0.47;
+
+
+                const maxHeight =
+                    window.innerHeight *
+                    0.78;
+
+
+                return Math.min(
+
+                    maxPageWidth /
+                        viewport.width,
+
+                    maxHeight /
+                        viewport.height
+
+                );
 
             }
 
 
             /*
-             * DOUBLE PAGE
+             * Desktop
              */
 
-            else {
-
-                maxWidth =
-                    window.innerWidth *
-                    0.46;
-
-            }
+            const maxPageWidth =
+                window.innerWidth *
+                0.46;
 
 
             const maxHeight =
@@ -523,7 +775,7 @@
 
             return Math.min(
 
-                maxWidth /
+                maxPageWidth /
                     viewport.width,
 
                 maxHeight /
@@ -549,45 +801,54 @@
                 );
 
 
-            const viewport =
+            const baseViewport =
                 page.getViewport({
                     scale: 1
                 });
 
 
             /*
-             * LOGICAL DISPLAY SCALE
+             * Visible size
              */
 
-            const scale =
+            const visibleScale =
                 calculateScale(
-                    viewport
+                    baseViewport
                 );
 
 
-            const scaledViewport =
+            const visibleViewport =
                 page.getViewport({
-                    scale: scale
+                    scale:
+                        visibleScale
                 });
 
 
             /*
-             * DEVICE PIXEL RATIO
+             * Render resolution
              *
-             * This is the key fix
-             * for high-resolution
-             * phone displays.
+             * Higher than visible size.
              */
 
-            const devicePixelRatio =
-                Math.min(
-                    window.devicePixelRatio || 1,
-                    3
-                );
+            const renderMultiplier =
+                getRenderMultiplier();
+
+
+            const renderScale =
+                visibleScale *
+                renderMultiplier *
+                zoomLevel;
+
+
+            const renderViewport =
+                page.getViewport({
+                    scale:
+                        renderScale
+                });
 
 
             /*
-             * PAGE CONTAINER
+             * Page element
              */
 
             const pageElement =
@@ -601,22 +862,28 @@
                 position;
 
 
+            /*
+             * CSS display size
+             */
+
             pageElement.style.width =
-                scaledViewport.width +
+                (
+                    visibleViewport.width *
+                    zoomLevel
+                ) +
                 "px";
 
 
             pageElement.style.height =
-                scaledViewport.height +
+                (
+                    visibleViewport.height *
+                    zoomLevel
+                ) +
                 "px";
 
 
             /*
-             * CANVAS
-             *
-             * Logical size stays the same.
-             * Physical bitmap becomes
-             * 2x–3x sharper on phones.
+             * Canvas
              */
 
             const canvas =
@@ -631,27 +898,39 @@
                 );
 
 
+            /*
+             * Physical canvas size
+             */
+
             canvas.width =
                 Math.floor(
-                    scaledViewport.width *
-                    devicePixelRatio
+                    renderViewport.width
                 );
 
 
             canvas.height =
                 Math.floor(
-                    scaledViewport.height *
-                    devicePixelRatio
+                    renderViewport.height
                 );
 
 
+            /*
+             * Display canvas size
+             */
+
             canvas.style.width =
-                scaledViewport.width +
+                (
+                    visibleViewport.width *
+                    zoomLevel
+                ) +
                 "px";
 
 
             canvas.style.height =
-                scaledViewport.height +
+                (
+                    visibleViewport.height *
+                    zoomLevel
+                ) +
                 "px";
 
 
@@ -661,36 +940,22 @@
 
 
             /*
-             * HIGH-DPI PDF RENDER
+             * Render
              */
 
-            const renderContext = {
+            await page.render({
 
                 canvasContext:
                     context,
 
                 viewport:
-                    scaledViewport,
+                    renderViewport
 
-                transform: [
-                    devicePixelRatio,
-                    0,
-                    0,
-                    devicePixelRatio,
-                    0,
-                    0
-                ]
-
-            };
-
-
-            await page.render(
-                renderContext
-            ).promise;
+            }).promise;
 
 
             /*
-             * PDF ANNOTATION LAYER
+             * PDF LINKS
              */
 
             const annotationLayer =
@@ -728,19 +993,29 @@
                 }
 
 
+                /*
+                 * Coordinates need to use
+                 * the visible scale and
+                 * zoom level, not the
+                 * render scale.
+                 */
+
                 const rect =
                     annotation.rect;
 
 
                 const left =
                     rect[0] *
-                    scale;
+                    visibleScale *
+                    zoomLevel;
 
 
                 const top =
-                    scaledViewport.height -
+                    visibleViewport.height *
+                    zoomLevel -
                     rect[3] *
-                    scale;
+                    visibleScale *
+                    zoomLevel;
 
 
                 const width =
@@ -748,7 +1023,8 @@
                         rect[2] -
                         rect[0]
                     ) *
-                    scale;
+                    visibleScale *
+                    zoomLevel;
 
 
                 const height =
@@ -756,7 +1032,8 @@
                         rect[3] -
                         rect[1]
                     ) *
-                    scale;
+                    visibleScale *
+                    zoomLevel;
 
 
                 const link =
@@ -806,7 +1083,7 @@
 
 
                 /*
-                 * INTERNAL PDF LINK
+                 * INTERNAL LINK
                  */
 
                 else if (
@@ -859,43 +1136,9 @@
                                     index + 1;
 
 
-                                if (
-                                    target === 1
-                                ) {
-
-                                    await navigateTo(
-                                        1
-                                    );
-
-                                }
-
-                                else if (
-                                    target === 50
-                                ) {
-
-                                    await navigateTo(
-                                        50
-                                    );
-
-                                }
-
-                                else if (
-                                    target % 2 === 0
-                                ) {
-
-                                    await navigateTo(
-                                        target
-                                    );
-
-                                }
-
-                                else {
-
-                                    await navigateTo(
-                                        target - 1
-                                    );
-
-                                }
+                                await navigateTo(
+                                    target
+                                );
 
                             }
 
@@ -942,7 +1185,22 @@
 
 
                     /*
-                     * FIRST PAGE
+                     * Don't use page click
+                     * during zoom.
+                     */
+
+                    if (
+                        zoomLevel > 1 &&
+                        isMobile()
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * COVER
                      */
 
                     if (
@@ -957,7 +1215,7 @@
 
 
                     /*
-                     * LAST PAGE
+                     * BACK COVER
                      */
 
                     if (
@@ -1004,10 +1262,11 @@
 
 
         /*
-         * BUILD NEXT VIEW
+         * BUILD PAGES
          */
 
         async function buildPages() {
+
 
             const container =
                 document.createElement(
@@ -1016,7 +1275,128 @@
 
 
             /*
-             * COVER
+             * Mobile:
+             *
+             * still two pages.
+             *
+             * Cover and back cover
+             * stay single.
+             */
+
+            if (
+                isMobile()
+            ) {
+
+                if (
+                    currentPage === 1
+                ) {
+
+                    const page =
+                        await renderPage(
+                            1,
+                            "single"
+                        );
+
+
+                    container.appendChild(
+                        page
+                    );
+
+
+                    return {
+
+                        container:
+                            container,
+
+                        label:
+                            "1 / 50"
+
+                    };
+
+                }
+
+
+                if (
+                    currentPage === 50
+                ) {
+
+                    const page =
+                        await renderPage(
+                            50,
+                            "single"
+                        );
+
+
+                    container.appendChild(
+                        page
+                    );
+
+
+                    return {
+
+                        container:
+                            container,
+
+                        label:
+                            "50 / 50"
+
+                    };
+
+                }
+
+
+                /*
+                 * Mobile spread
+                 */
+
+                container.className =
+                    "spread";
+
+
+                const left =
+                    await renderPage(
+                        currentPage,
+                        "left"
+                    );
+
+
+                const right =
+                    await renderPage(
+                        currentPage + 1,
+                        "right"
+                    );
+
+
+                container.appendChild(
+                    left
+                );
+
+
+                container.appendChild(
+                    right
+                );
+
+
+                return {
+
+                    container:
+                        container,
+
+                    label:
+                        currentPage +
+                        "–" +
+                        (
+                            currentPage + 1
+                        ) +
+                        " / 50"
+
+                };
+
+            }
+
+
+            /*
+             * Desktop cover
              */
 
             if (
@@ -1049,7 +1429,7 @@
 
 
             /*
-             * BACK COVER
+             * Desktop back cover
              */
 
             if (
@@ -1082,7 +1462,7 @@
 
 
             /*
-             * SPREAD
+             * Desktop spread
              */
 
             container.className =
@@ -1133,19 +1513,17 @@
 
         /*
          * SHOW PAGES
+         *
+         * Render first.
+         * Replace second.
          */
 
         async function showPages() {
 
+
             const result =
                 await buildPages();
 
-
-            /*
-             * Old page stays visible
-             * until the new one is
-             * completely rendered.
-             */
 
             book.replaceChildren(
                 result.container
@@ -1159,7 +1537,7 @@
 
 
         /*
-         * NAVIGATE TO
+         * NAVIGATE
          */
 
         async function navigateTo(
@@ -1171,6 +1549,39 @@
             ) {
 
                 return;
+
+            }
+
+
+            /*
+             * Keep inside bounds
+             */
+
+            target =
+                Math.max(
+                    1,
+                    Math.min(
+                        50,
+                        target
+                    )
+                );
+
+
+            /*
+             * Desktop:
+             * internal links should
+             * open on the correct
+             * left page of a spread.
+             */
+
+            if (
+                !isMobile() &&
+                target !== 1 &&
+                target !== 50 &&
+                target % 2 !== 0
+            ) {
+
+                target--;
 
             }
 
@@ -1205,6 +1616,7 @@
 
         async function nextPage() {
 
+
             if (
                 changingPage
             ) {
@@ -1214,11 +1626,44 @@
             }
 
 
-            changingPage =
-                true;
+            if (
+                isMobile()
+            ) {
+
+                if (
+                    currentPage >= 50
+                ) {
+
+                    return;
+
+                }
 
 
-            try {
+                currentPage += 2;
+
+
+                /*
+                 * If we reach page 49,
+                 * display 49–50.
+                 * Since 50 is the back
+                 * cover, we instead
+                 * stop on 48–49 and
+                 * make 50 accessible
+                 * only through the
+                 * next click.
+                 */
+
+                if (
+                    currentPage === 50
+                ) {
+
+                    currentPage = 50;
+
+                }
+
+            }
+
+            else {
 
                 if (
                     currentPage === 1
@@ -1242,6 +1687,14 @@
 
                 }
 
+            }
+
+
+            changingPage =
+                true;
+
+
+            try {
 
                 await showPages();
 
@@ -1263,6 +1716,7 @@
 
         async function previousPage() {
 
+
             if (
                 changingPage
             ) {
@@ -1272,11 +1726,33 @@
             }
 
 
-            changingPage =
-                true;
+            if (
+                isMobile()
+            ) {
+
+                if (
+                    currentPage <= 1
+                ) {
+
+                    return;
+
+                }
 
 
-            try {
+                currentPage -= 2;
+
+
+                if (
+                    currentPage < 1
+                ) {
+
+                    currentPage = 1;
+
+                }
+
+            }
+
+            else {
 
                 if (
                     currentPage === 50
@@ -1300,6 +1776,14 @@
 
                 }
 
+            }
+
+
+            changingPage =
+                true;
+
+
+            try {
 
                 await showPages();
 
@@ -1316,7 +1800,333 @@
 
 
         /*
-         * BUTTONS
+         * ZOOM
+         */
+
+        async function setZoom(
+            value
+        ) {
+
+
+            value =
+                Math.max(
+                    1,
+                    Math.min(
+                        getMaxZoom(),
+                        value
+                    )
+                );
+
+
+            zoomLevel =
+                value;
+
+
+            zoomResetButton.textContent =
+                zoomLevel.toFixed(1) +
+                "×";
+
+
+            /*
+             * Re-render at the
+             * new resolution.
+             */
+
+            if (
+                pdf
+            ) {
+
+                await showPages();
+
+            }
+
+        }
+
+
+        /*
+         * ZOOM BUTTONS
+         */
+
+        zoomInButton.addEventListener(
+            "click",
+            function(event) {
+
+                event.stopPropagation();
+
+                setZoom(
+                    zoomLevel + 0.5
+                );
+
+            }
+        );
+
+
+        zoomOutButton.addEventListener(
+            "click",
+            function(event) {
+
+                event.stopPropagation();
+
+                setZoom(
+                    zoomLevel - 0.5
+                );
+
+            }
+        );
+
+
+        zoomResetButton.addEventListener(
+            "click",
+            function(event) {
+
+                event.stopPropagation();
+
+                setZoom(1);
+
+            }
+        );
+
+
+        /*
+         * TOUCH PINCH
+         */
+
+        document.addEventListener(
+            "touchstart",
+            function(event) {
+
+                if (
+                    event.touches.length !== 2
+                ) {
+
+                    return;
+
+                }
+
+
+                const first =
+                    event.touches[0];
+
+
+                const second =
+                    event.touches[1];
+
+
+                const dx =
+                    first.clientX -
+                    second.clientX;
+
+
+                const dy =
+                    first.clientY -
+                    second.clientY;
+
+
+                pinchStartDistance =
+                    Math.hypot(
+                        dx,
+                        dy
+                    );
+
+
+                pinchStartZoom =
+                    zoomLevel;
+
+            },
+            {
+                passive: true
+            }
+        );
+
+
+        document.addEventListener(
+            "touchmove",
+            function(event) {
+
+                if (
+                    event.touches.length !== 2
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    !pinchStartDistance
+                ) {
+
+                    return;
+
+                }
+
+
+                const first =
+                    event.touches[0];
+
+
+                const second =
+                    event.touches[1];
+
+
+                const dx =
+                    first.clientX -
+                    second.clientX;
+
+
+                const dy =
+                    first.clientY -
+                    second.clientY;
+
+
+                const currentDistance =
+                    Math.hypot(
+                        dx,
+                        dy
+                    );
+
+
+                const ratio =
+                    currentDistance /
+                    pinchStartDistance;
+
+
+                let newZoom =
+                    pinchStartZoom *
+                    ratio;
+
+
+                newZoom =
+                    Math.max(
+                        1,
+                        Math.min(
+                            getMaxZoom(),
+                            newZoom
+                        )
+                    );
+
+
+                /*
+                 * During pinch we only
+                 * resize the already
+                 * rendered page.
+                 *
+                 * This keeps the gesture
+                 * smooth.
+                 */
+
+                book.style.transform =
+                    "scale(" +
+                    newZoom +
+                    ")";
+
+            },
+            {
+                passive: true
+            }
+        );
+
+
+        document.addEventListener(
+            "touchend",
+            async function(event) {
+
+                if (
+                    event.touches.length !== 0
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    !pinchStartDistance
+                ) {
+
+                    return;
+
+                }
+
+
+                /*
+                 * Read current scale
+                 * from CSS transform.
+                 *
+                 * Simpler approach:
+                 * reset transform and
+                 * render at the final
+                 * zoom level.
+                 */
+
+                const transform =
+                    book.style.transform;
+
+
+                const match =
+                    transform.match(
+                        /scale\(([^)]+)\)/
+                    );
+
+
+                if (
+                    match
+                ) {
+
+                    let finalZoom =
+                        parseFloat(
+                            match[1]
+                        );
+
+
+                    finalZoom =
+                        Math.max(
+                            1,
+                            Math.min(
+                                getMaxZoom(),
+                                finalZoom
+                            )
+                        );
+
+
+                    zoomLevel =
+                        finalZoom;
+
+                }
+
+
+                book.style.transform =
+                    "scale(1)";
+
+
+                pinchStartDistance =
+                    null;
+
+
+                await showPages();
+
+            }
+        );
+
+
+        /*
+         * PREVIOUS BUTTON
+         */
+
+        previous.addEventListener(
+            "click",
+            function(event) {
+
+                event.stopPropagation();
+
+                previousPage();
+
+            }
+        );
+
+
+        /*
+         * NEXT BUTTON
          */
 
         next.addEventListener(
@@ -1326,18 +2136,6 @@
                 event.stopPropagation();
 
                 nextPage();
-
-            }
-        );
-
-
-        previous.addEventListener(
-            "click",
-            function(event) {
-
-                event.stopPropagation();
-
-                previousPage();
 
             }
         );
@@ -1370,6 +2168,37 @@
 
                 }
 
+
+                if (
+                    event.key === "+"
+                ) {
+
+                    setZoom(
+                        zoomLevel + 0.5
+                    );
+
+                }
+
+
+                if (
+                    event.key === "-"
+                ) {
+
+                    setZoom(
+                        zoomLevel - 0.5
+                    );
+
+                }
+
+
+                if (
+                    event.key === "0"
+                ) {
+
+                    setZoom(1);
+
+                }
+
             }
         );
 
@@ -1377,9 +2206,6 @@
         /*
          * RESIZE
          */
-
-        let resizeTimer;
-
 
         window.addEventListener(
             "resize",
@@ -1404,10 +2230,23 @@
                             }
 
 
+                            /*
+                             * Return to 1x
+                             * when orientation
+                             * or screen size
+                             * changes significantly.
+                             */
+
+                            zoomLevel = 1;
+
+                            zoomResetButton.textContent =
+                                "1×";
+
+
                             await showPages();
 
                         },
-                        150
+                        180
                     );
 
             }
