@@ -56,6 +56,7 @@
         .page {
             position: relative;
             background: #ffffff;
+            cursor: pointer;
         }
 
 
@@ -84,6 +85,35 @@
         }
 
 
+        /*
+         * PDF LINK LAYER
+         */
+
+        .annotation-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+
+        .annotation-link {
+            position: absolute;
+            display: block;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+
+        .annotation-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+
+        /*
+         * NAVIGATION
+         */
+
         #controls {
             position: fixed;
             left: 50%;
@@ -95,10 +125,15 @@
             align-items: center;
             gap: 20px;
 
-            font-family: Arial, Helvetica, sans-serif;
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
             font-size: 11px;
 
             letter-spacing: 0.12em;
+
             text-transform: uppercase;
 
             color: #333333;
@@ -156,6 +191,7 @@
                 max-height: 84vh;
             }
 
+
             #controls {
                 bottom: 12px;
             }
@@ -184,9 +220,11 @@
             ←
         </button>
 
+
         <span id="pageNumber">
             1 / 50
         </span>
+
 
         <button id="next">
             →
@@ -200,7 +238,8 @@
 
     <script>
 
-        const PDF_URL = "../portfolio.pdf";
+        const PDF_URL =
+            "../portfolio.pdf";
 
 
         pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -232,6 +271,10 @@
         let currentPage = 1;
 
 
+        /*
+         * LOAD PDF
+         */
+
         async function loadPDF() {
 
             try {
@@ -261,6 +304,32 @@
         }
 
 
+        /*
+         * CALCULATE PAGE SIZE
+         */
+
+        function calculateScale(viewport) {
+
+            const maxWidth =
+                window.innerWidth * 0.46;
+
+
+            const maxHeight =
+                window.innerHeight * 0.86;
+
+
+            return Math.min(
+                maxWidth / viewport.width,
+                maxHeight / viewport.height
+            );
+
+        }
+
+
+        /*
+         * RENDER ONE PDF PAGE
+         */
+
         async function renderPage(
             pageNumberValue,
             position
@@ -278,18 +347,9 @@
                 });
 
 
-            const maxWidth =
-                window.innerWidth * 0.46;
-
-
-            const maxHeight =
-                window.innerHeight * 0.86;
-
-
             const scale =
-                Math.min(
-                    maxWidth / viewport.width,
-                    maxHeight / viewport.height
+                calculateScale(
+                    viewport
                 );
 
 
@@ -300,7 +360,9 @@
 
 
             const pageElement =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
 
             pageElement.className =
@@ -308,19 +370,29 @@
 
 
             pageElement.style.width =
-                scaledViewport.width + "px";
+                scaledViewport.width +
+                "px";
 
 
             pageElement.style.height =
-                scaledViewport.height + "px";
+                scaledViewport.height +
+                "px";
 
+
+            /*
+             * CANVAS
+             */
 
             const canvas =
-                document.createElement("canvas");
+                document.createElement(
+                    "canvas"
+                );
 
 
             const context =
-                canvas.getContext("2d");
+                canvas.getContext(
+                    "2d"
+                );
 
 
             canvas.width =
@@ -331,7 +403,9 @@
                 scaledViewport.height;
 
 
-            pageElement.appendChild(canvas);
+            pageElement.appendChild(
+                canvas
+            );
 
 
             await page.render({
@@ -345,10 +419,354 @@
             }).promise;
 
 
+            /*
+             * ANNOTATION LAYER
+             */
+
+            const annotationLayer =
+                document.createElement(
+                    "div"
+                );
+
+
+            annotationLayer.className =
+                "annotation-layer";
+
+
+            pageElement.appendChild(
+                annotationLayer
+            );
+
+
+            const annotations =
+                await page.getAnnotations();
+
+
+            for (
+                const annotation
+                of annotations
+            ) {
+
+                if (
+                    annotation.subtype !==
+                    "Link"
+                ) {
+                    continue;
+                }
+
+
+                const rect =
+                    annotation.rect;
+
+
+                const left =
+                    rect[0] * scale;
+
+
+                const top =
+                    scaledViewport.height -
+                    rect[3] * scale;
+
+
+                const width =
+                    (
+                        rect[2] -
+                        rect[0]
+                    ) * scale;
+
+
+                const height =
+                    (
+                        rect[3] -
+                        rect[1]
+                    ) * scale;
+
+
+                const link =
+                    document.createElement(
+                        "a"
+                    );
+
+
+                link.className =
+                    "annotation-link";
+
+
+                link.style.left =
+                    left + "px";
+
+
+                link.style.top =
+                    top + "px";
+
+
+                link.style.width =
+                    width + "px";
+
+
+                link.style.height =
+                    height + "px";
+
+
+                /*
+                 * EXTERNAL URL
+                 */
+
+                if (
+                    annotation.url
+                ) {
+
+                    link.href =
+                        annotation.url;
+
+                    link.target =
+                        "_blank";
+
+                    link.rel =
+                        "noopener noreferrer";
+
+                }
+
+
+                /*
+                 * INTERNAL PDF LINK
+                 */
+
+                else if (
+                    annotation.dest
+                ) {
+
+                    link.href =
+                        "#";
+
+
+                    link.addEventListener(
+                        "click",
+                        async function(event) {
+
+                            event.preventDefault();
+
+                            event.stopPropagation();
+
+
+                            try {
+
+                                const destination =
+                                    await pdf
+                                        .getDestination(
+                                            annotation.dest
+                                        );
+
+
+                                if (
+                                    !destination
+                                ) {
+                                    return;
+                                }
+
+
+                                const pageRef =
+                                    destination[0];
+
+
+                                const targetIndex =
+                                    await pdf
+                                        .getPageIndex(
+                                            pageRef
+                                        );
+
+
+                                const targetPage =
+                                    targetIndex + 1;
+
+
+                                /*
+                                 * DESTINATION:
+                                 *
+                                 * page 1
+                                 * → cover
+                                 *
+                                 * page 50
+                                 * → back cover
+                                 *
+                                 * even page
+                                 * → left side
+                                 *
+                                 * odd page
+                                 * → previous spread
+                                 */
+
+                                if (
+                                    targetPage === 1
+                                ) {
+
+                                    currentPage = 1;
+
+                                }
+
+                                else if (
+                                    targetPage === 50
+                                ) {
+
+                                    currentPage = 50;
+
+                                }
+
+                                else if (
+                                    targetPage % 2 === 0
+                                ) {
+
+                                    currentPage =
+                                        targetPage;
+
+                                }
+
+                                else {
+
+                                    currentPage =
+                                        targetPage - 1;
+
+                                }
+
+
+                                await showPages();
+
+                            }
+
+                            catch (error) {
+
+                                console.error(
+                                    "PDF link error:",
+                                    error
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                annotationLayer.appendChild(
+                    link
+                );
+
+            }
+
+
+            /*
+             * CLICK ON PAGE
+             *
+             * PDF links have their own
+             * layer and therefore do not
+             * trigger this navigation.
+             */
+
+            pageElement.addEventListener(
+                "click",
+                function(event) {
+
+                    if (
+                        event.target.closest(
+                            ".annotation-link"
+                        )
+                    ) {
+                        return;
+                    }
+
+
+                    const rect =
+                        pageElement
+                            .getBoundingClientRect();
+
+
+                    const clickX =
+                        event.clientX -
+                        rect.left;
+
+
+                    const half =
+                        rect.width / 2;
+
+
+                    if (
+                        position === "left"
+                    ) {
+
+                        if (
+                            clickX < half
+                        ) {
+
+                            previousPage();
+
+                        }
+
+                        else {
+
+                            nextPage();
+
+                        }
+
+                    }
+
+
+                    else if (
+                        position === "right"
+                    ) {
+
+                        if (
+                            clickX < half
+                        ) {
+
+                            previousPage();
+
+                        }
+
+                        else {
+
+                            nextPage();
+
+                        }
+
+                    }
+
+
+                    else {
+
+                        /*
+                         * SINGLE PAGE
+                         */
+
+                        if (
+                            clickX <
+                            rect.width / 2
+                        ) {
+
+                            previousPage();
+
+                        }
+
+                        else {
+
+                            nextPage();
+
+                        }
+
+                    }
+
+                }
+            );
+
+
             return pageElement;
 
         }
 
+
+        /*
+         * SHOW CURRENT SPREAD
+         */
 
         async function showPages() {
 
@@ -356,10 +774,12 @@
 
 
             /*
-             * PRVA STRANA
+             * COVER
              */
 
-            if (currentPage === 1) {
+            if (
+                currentPage === 1
+            ) {
 
                 const page =
                     await renderPage(
@@ -368,7 +788,9 @@
                     );
 
 
-                book.appendChild(page);
+                book.appendChild(
+                    page
+                );
 
 
                 pageNumber.textContent =
@@ -381,10 +803,12 @@
 
 
             /*
-             * POSLEDNÁ STRANA
+             * BACK COVER
              */
 
-            if (currentPage === 50) {
+            if (
+                currentPage === 50
+            ) {
 
                 const page =
                     await renderPage(
@@ -393,7 +817,9 @@
                     );
 
 
-                book.appendChild(page);
+                book.appendChild(
+                    page
+                );
 
 
                 pageNumber.textContent =
@@ -406,11 +832,13 @@
 
 
             /*
-             * DVOJSTRANA
+             * NORMAL SPREAD
              */
 
             const spread =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
 
             spread.className =
@@ -431,46 +859,111 @@
                 );
 
 
-            spread.appendChild(left);
+            spread.appendChild(
+                left
+            );
 
-            spread.appendChild(right);
 
-            book.appendChild(spread);
+            spread.appendChild(
+                right
+            );
+
+
+            book.appendChild(
+                spread
+            );
 
 
             pageNumber.textContent =
                 currentPage +
                 "–" +
-                (currentPage + 1) +
+                (
+                    currentPage + 1
+                ) +
                 " / 50";
 
         }
 
 
+        /*
+         * NEXT
+         */
+
+        async function nextPage() {
+
+            if (
+                currentPage === 1
+            ) {
+
+                currentPage = 2;
+
+            }
+
+            else if (
+                currentPage < 48
+            ) {
+
+                currentPage += 2;
+
+            }
+
+            else {
+
+                currentPage = 50;
+
+            }
+
+
+            await showPages();
+
+        }
+
+
+        /*
+         * PREVIOUS
+         */
+
+        async function previousPage() {
+
+            if (
+                currentPage === 50
+            ) {
+
+                currentPage = 48;
+
+            }
+
+            else if (
+                currentPage > 2
+            ) {
+
+                currentPage -= 2;
+
+            }
+
+            else {
+
+                currentPage = 1;
+
+            }
+
+
+            await showPages();
+
+        }
+
+
+        /*
+         * BUTTONS
+         */
+
         next.addEventListener(
             "click",
-            async function () {
+            function(event) {
 
-                if (currentPage === 1) {
+                event.stopPropagation();
 
-                    currentPage = 2;
-
-                }
-
-                else if (currentPage < 48) {
-
-                    currentPage += 2;
-
-                }
-
-                else {
-
-                    currentPage = 50;
-
-                }
-
-
-                await showPages();
+                nextPage();
 
             }
         );
@@ -478,57 +971,50 @@
 
         previous.addEventListener(
             "click",
-            async function () {
+            function(event) {
 
-                if (currentPage === 50) {
+                event.stopPropagation();
 
-                    currentPage = 48;
-
-                }
-
-                else if (currentPage > 2) {
-
-                    currentPage -= 2;
-
-                }
-
-                else {
-
-                    currentPage = 1;
-
-                }
-
-
-                await showPages();
+                previousPage();
 
             }
         );
 
+
+        /*
+         * KEYBOARD
+         */
 
         document.addEventListener(
             "keydown",
-            async function (event) {
+            function(event) {
 
                 if (
-                    event.key === "ArrowRight"
+                    event.key ===
+                    "ArrowRight"
                 ) {
 
-                    next.click();
+                    nextPage();
 
                 }
 
 
                 if (
-                    event.key === "ArrowLeft"
+                    event.key ===
+                    "ArrowLeft"
                 ) {
 
-                    previous.click();
+                    previousPage();
 
                 }
 
             }
         );
 
+
+        /*
+         * START
+         */
 
         loadPDF();
 
