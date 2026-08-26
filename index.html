@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +13,6 @@
 
         html, body {
             margin: 0;
-            padding: 0;
             width: 100%;
             height: 100%;
         }
@@ -25,83 +24,44 @@
         }
 
         .page {
-            min-height: 100vh;
-            padding: 32px;
+            width: 100%;
+            height: 100vh;
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            align-items: center;
+            justify-content: center;
         }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .name {
-            font-size: 16px;
-            font-weight: 400;
-            letter-spacing: 0.02em;
-        }
-
-        nav {
-            display: flex;
-            gap: 24px;
-        }
-
-        nav a {
-            color: #111111;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        nav a:hover {
-            opacity: 0.5;
-        }
-
-        main {
-            margin-bottom: 8vh;
+        .content {
+            text-align: center;
         }
 
         h1 {
             margin: 0;
-            font-size: clamp(48px, 8vw, 120px);
+            font-size: clamp(42px, 6vw, 90px);
             font-weight: 400;
             letter-spacing: -0.04em;
-            line-height: 0.95;
+            line-height: 1;
         }
 
-        .subtitle {
-            margin-top: 24px;
-            font-size: 16px;
-            letter-spacing: 0.02em;
+        .profession {
+            margin-top: 18px;
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: 0.22em;
         }
 
-        footer {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #666666;
+        .portfolio {
+            display: inline-block;
+            margin-top: 48px;
+            color: #111111;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.18em;
         }
 
-        @media (max-width: 600px) {
-            .page {
-                padding: 20px;
-            }
-
-            header {
-                align-items: flex-start;
-            }
-
-            nav {
-                gap: 14px;
-                flex-direction: column;
-                align-items: flex-end;
-            }
-
-            h1 {
-                font-size: 64px;
-            }
+        .portfolio:hover {
+            opacity: 0.45;
         }
     </style>
 </head>
@@ -109,26 +69,19 @@
 <body>
 
     <div class="page">
+        <main class="content">
 
-        <header>
-            <div class="name">MATY</div>
+            <h1>Matúš Blažíček</h1>
 
-            <nav>
-                <a href="portfolio.pdf">PORTFOLIO</a>
-                <a href="cv.pdf">CV</a>
-            </nav>
-        </header>
+            <div class="profession">
+                ARCHITECT
+            </div>
 
-        <main>
-            <h1>ARCHITECT</h1>
-            <div class="subtitle">Architecture · Design · Research</div>
+            <a class="portfolio" href="portfolio.pdf">
+                PORTFOLIO &amp; CV
+            </a>
+
         </main>
-
-        <footer>
-            <span>© 2026</span>
-            <span>Slovakia</span>
-        </footer>
-
     </div>
 
 </body>
