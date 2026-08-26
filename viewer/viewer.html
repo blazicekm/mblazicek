@@ -30,7 +30,7 @@
 
             overflow: hidden;
 
-            background: #eeeeee;
+            background: #f7f7f7;
 
         }
 
@@ -96,20 +96,20 @@
 
 
         /*
-         * ORIGINAL SINGLE PAGE SHADOW
+         * SINGLE PAGE
          */
 
         .page.single {
 
             box-shadow:
                 0 5px 25px
-                rgba(0, 0, 0, 0.12);
+                rgba(0, 0, 0, 0.07);
 
         }
 
 
         /*
-         * ORIGINAL LEFT PAGE SHADOW
+         * LEFT PAGE
          */
 
         .page.left {
@@ -117,16 +117,16 @@
             box-shadow:
 
                 -4px 5px 25px
-                rgba(0, 0, 0, 0.10),
+                rgba(0, 0, 0, 0.055),
 
                 inset -8px 0 15px -15px
-                rgba(0, 0, 0, 0.40);
+                rgba(0, 0, 0, 0.20);
 
         }
 
 
         /*
-         * ORIGINAL RIGHT PAGE SHADOW
+         * RIGHT PAGE
          */
 
         .page.right {
@@ -134,16 +134,16 @@
             box-shadow:
 
                 4px 5px 25px
-                rgba(0, 0, 0, 0.10),
+                rgba(0, 0, 0, 0.055),
 
                 inset 8px 0 15px -15px
-                rgba(0, 0, 0, 0.40);
+                rgba(0, 0, 0, 0.20);
 
         }
 
 
         /*
-         * ORIGINAL CENTER SHADOW
+         * CENTER SHADOW
          */
 
         .spread::after {
@@ -166,7 +166,7 @@
                 linear-gradient(
                     to right,
                     rgba(0, 0, 0, 0),
-                    rgba(0, 0, 0, 0.10),
+                    rgba(0, 0, 0, 0.055),
                     rgba(0, 0, 0, 0)
                 );
 
@@ -798,10 +798,6 @@
                                     index + 1;
 
 
-                                /*
-                                 * COVER
-                                 */
-
                                 if (
                                     target === 1
                                 ) {
@@ -812,11 +808,6 @@
 
                                 }
 
-
-                                /*
-                                 * BACK COVER
-                                 */
-
                                 else if (
                                     target === 50
                                 ) {
@@ -826,11 +817,6 @@
                                     );
 
                                 }
-
-
-                                /*
-                                 * NORMAL SPREAD
-                                 */
 
                                 else if (
                                     target % 2 === 0
@@ -883,11 +869,6 @@
                 function(event) {
 
 
-                    /*
-                     * Don't navigate when
-                     * clicking a PDF link.
-                     */
-
                     if (
                         event.target.closest(
                             ".annotation-link"
@@ -931,8 +912,6 @@
 
                     /*
                      * LEFT PAGE
-                     *
-                     * 2, 4, 6, 8...
                      */
 
                     if (
@@ -946,8 +925,6 @@
 
                     /*
                      * RIGHT PAGE
-                     *
-                     * 3, 5, 7, 9...
                      */
 
                     else {
@@ -966,20 +943,15 @@
 
 
         /*
-         * PREPARE NEXT VIEW
+         * BUILD NEW VIEW
          *
-         * IMPORTANT:
-         *
-         * We render everything first
-         * and only replace the visible
-         * book after the new content
-         * is completely ready.
-         *
-         * This removes the white flash.
+         * The current pages stay
+         * visible until the new
+         * pages are completely
+         * rendered.
          */
 
         async function buildPages() {
-
 
             const container =
                 document.createElement(
@@ -1008,8 +980,13 @@
 
 
                 return {
-                    container,
-                    label: "1 / 50"
+
+                    container:
+                        container,
+
+                    label:
+                        "1 / 50"
+
                 };
 
             }
@@ -1036,15 +1013,20 @@
 
 
                 return {
-                    container,
-                    label: "50 / 50"
+
+                    container:
+                        container,
+
+                    label:
+                        "50 / 50"
+
                 };
 
             }
 
 
             /*
-             * NORMAL SPREAD
+             * SPREAD
              */
 
             container.className =
@@ -1076,7 +1058,10 @@
 
 
             return {
-                container,
+
+                container:
+                    container,
+
                 label:
                     currentPage +
                     "–" +
@@ -1084,6 +1069,7 @@
                         currentPage + 1
                     ) +
                     " / 50"
+
             };
 
         }
@@ -1091,11 +1077,6 @@
 
         /*
          * SHOW PAGES
-         *
-         * The old content stays
-         * visible until the new
-         * content is completely
-         * rendered.
          */
 
         async function showPages() {
@@ -1103,10 +1084,6 @@
             const result =
                 await buildPages();
 
-
-            /*
-             * Atomic replacement
-             */
 
             book.replaceChildren(
                 result.container
@@ -1120,7 +1097,7 @@
 
 
         /*
-         * NAVIGATE TO EXACT PAGE
+         * NAVIGATE TO
          */
 
         async function navigateTo(
@@ -1136,7 +1113,8 @@
             }
 
 
-            changingPage = true;
+            changingPage =
+                true;
 
 
             currentPage =
@@ -1151,7 +1129,8 @@
 
             finally {
 
-                changingPage = false;
+                changingPage =
+                    false;
 
             }
 
@@ -1173,7 +1152,8 @@
             }
 
 
-            changingPage = true;
+            changingPage =
+                true;
 
 
             try {
@@ -1207,7 +1187,8 @@
 
             finally {
 
-                changingPage = false;
+                changingPage =
+                    false;
 
             }
 
@@ -1229,7 +1210,8 @@
             }
 
 
-            changingPage = true;
+            changingPage =
+                true;
 
 
             try {
@@ -1263,7 +1245,8 @@
 
             finally {
 
-                changingPage = false;
+                changingPage =
+                    false;
 
             }
 
@@ -1331,10 +1314,6 @@
 
         /*
          * RESIZE
-         *
-         * Re-render only after
-         * the window has stopped
-         * resizing.
          */
 
         let resizeTimer;
