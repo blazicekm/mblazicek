@@ -47,61 +47,86 @@
         }
 
 
-        #book {
-
-            position: relative;
-
-            width: 92vw;
-            height: 88vh;
-
-            display: flex;
-
-            align-items: center;
-            justify-content: center;
-
-            transform-origin: center center;
-
-        }
-
+        /*
+         * MAIN VIEWPORT
+         */
 
         #book-shell {
 
-            width: 100%;
-            height: 100%;
+            position: relative;
 
-            display: flex;
+            width: 100vw;
+            height: 100vh;
 
-            align-items: center;
-            justify-content: center;
-
-            overflow: visible;
+            overflow: hidden;
 
         }
 
+
+        /*
+         * BOOK
+         */
+
+        #book {
+
+            position: absolute;
+
+            left: 50%;
+            top: 50%;
+
+            display: block;
+
+            transform:
+                translate(
+                    -50%,
+                    -50%
+                );
+
+            transform-origin:
+                center center;
+
+            will-change:
+                transform;
+
+        }
+
+
+        /*
+         * SPREAD
+         */
 
         .spread {
 
-            position: relative;
-
             display: flex;
 
+            flex-direction: row;
+
             align-items: stretch;
+
             justify-content: center;
+
+            width: max-content;
 
         }
 
+
+        /*
+         * PAGE
+         */
 
         .page {
 
             position: relative;
+
+            display: block;
+
+            flex: 0 0 auto;
 
             background: #ffffff;
 
             overflow: hidden;
 
             cursor: pointer;
-
-            flex-shrink: 0;
 
         }
 
@@ -124,7 +149,12 @@
 
             box-shadow:
                 0 5px 25px
-                rgba(0, 0, 0, 0.07);
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
 
         }
 
@@ -138,10 +168,20 @@
             box-shadow:
 
                 -4px 5px 25px
-                rgba(0, 0, 0, 0.055),
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.055
+                ),
 
                 inset -8px 0 15px -15px
-                rgba(0, 0, 0, 0.20);
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.20
+                );
 
         }
 
@@ -155,10 +195,20 @@
             box-shadow:
 
                 4px 5px 25px
-                rgba(0, 0, 0, 0.055),
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.055
+                ),
 
                 inset 8px 0 15px -15px
-                rgba(0, 0, 0, 0.20);
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.20
+                );
 
         }
 
@@ -186,9 +236,24 @@
             background:
                 linear-gradient(
                     to right,
-                    rgba(0, 0, 0, 0),
-                    rgba(0, 0, 0, 0.055),
-                    rgba(0, 0, 0, 0)
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0
+                    ),
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0.055
+                    ),
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0
+                    )
                 );
 
             pointer-events: none;
@@ -343,6 +408,8 @@
                 Helvetica,
                 sans-serif;
 
+            user-select: none;
+
         }
 
 
@@ -355,7 +422,8 @@
 
             border: none;
 
-            background: transparent;
+            background:
+                transparent;
 
             color: #333333;
 
@@ -407,9 +475,22 @@
 
             #book {
 
-                width: 96vw;
+                left: 50%;
+                top: 50%;
 
-                height: 82vh;
+            }
+
+
+            .spread {
+
+                width: 94vw;
+
+            }
+
+
+            .page {
+
+                width: 47vw !important;
 
             }
 
@@ -432,14 +513,25 @@
             }
 
 
+            .page.single {
+
+                width: 70vw !important;
+
+            }
+
+
             .page.single,
             .page.left,
             .page.right {
 
                 box-shadow:
-
                     0 5px 25px
-                    rgba(0, 0, 0, 0.07);
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0.07
+                    );
 
             }
 
@@ -555,6 +647,12 @@
             );
 
 
+        const bookShell =
+            document.getElementById(
+                "book-shell"
+            );
+
+
         const pageNumber =
             document.getElementById(
                 "pageNumber"
@@ -603,16 +701,48 @@
 
         let zoomLevel = 1;
 
-        let resizeTimer;
+
+        /*
+         * PAN
+         */
+
+        let panX = 0;
+
+        let panY = 0;
+
+        let dragStartX = 0;
+
+        let dragStartY = 0;
+
+        let dragStartPanX = 0;
+
+        let dragStartPanY = 0;
+
+        let dragging = false;
 
 
         /*
-         * TOUCH ZOOM STATE
+         * PINCH
          */
 
         let pinchStartDistance = null;
 
         let pinchStartZoom = 1;
+
+        let pinchStartPanX = 0;
+
+        let pinchStartPanY = 0;
+
+        let pinchStartMidX = 0;
+
+        let pinchStartMidY = 0;
+
+
+        /*
+         * RESIZE
+         */
+
+        let resizeTimer;
 
 
         /*
@@ -627,11 +757,11 @@
 
 
         /*
-         * BASE RENDER SCALE
+         * RENDER MULTIPLIER
          *
-         * The PDF is intentionally
-         * rendered larger than its
-         * display size.
+         * iPhone/iOS gets 2.5x.
+         * This is a compromise between
+         * sharpness and Safari memory usage.
          */
 
         function getRenderMultiplier() {
@@ -640,18 +770,10 @@
                 isMobile()
             ) {
 
-                /*
-                 * 3x on mobile
-                 */
-
-                return 3;
+                return 2.5;
 
             }
 
-
-            /*
-             * 2x on desktop
-             */
 
             return 2;
 
@@ -674,6 +796,107 @@
 
 
             return 2.5;
+
+        }
+
+
+        /*
+         * APPLY TRANSFORM
+         */
+
+        function applyTransform() {
+
+            book.style.transform =
+                "translate(" +
+                (
+                    -50 +
+                    (
+                        panX /
+                        bookShell.clientWidth
+                    ) *
+                    100
+                ) +
+                "%, " +
+                (
+                    -50 +
+                    (
+                        panY /
+                        bookShell.clientHeight
+                    ) *
+                    100
+                ) +
+                "%) " +
+                "scale(" +
+                zoomLevel +
+                ")";
+
+        }
+
+
+        /*
+         * CLAMP PAN
+         */
+
+        function clampPan() {
+
+
+            if (
+                zoomLevel <= 1
+            ) {
+
+                panX = 0;
+
+                panY = 0;
+
+                return;
+
+            }
+
+
+            const zoomExtra =
+                zoomLevel - 1;
+
+
+            const horizontalLimit =
+                Math.max(
+                    0,
+                    (
+                        bookShell.clientWidth *
+                        zoomExtra
+                    ) /
+                    2
+                );
+
+
+            const verticalLimit =
+                Math.max(
+                    0,
+                    (
+                        bookShell.clientHeight *
+                        zoomExtra
+                    ) /
+                    2
+                );
+
+
+            panX =
+                Math.max(
+                    -horizontalLimit,
+                    Math.min(
+                        horizontalLimit,
+                        panX
+                    )
+                );
+
+
+            panY =
+                Math.max(
+                    -verticalLimit,
+                    Math.min(
+                        verticalLimit,
+                        panY
+                    )
+                );
 
         }
 
@@ -717,9 +940,6 @@
 
         /*
          * SCALE
-         *
-         * This calculates the
-         * visible page size.
          */
 
         function calculateScale(
@@ -727,9 +947,11 @@
         ) {
 
             /*
-             * Mobile:
+             * MOBILE
              *
-             * still two pages.
+             * Two pages must always
+             * fit exactly across
+             * the viewport.
              */
 
             if (
@@ -760,7 +982,7 @@
 
 
             /*
-             * Desktop
+             * DESKTOP
              */
 
             const maxPageWidth =
@@ -807,10 +1029,6 @@
                 });
 
 
-            /*
-             * Visible size
-             */
-
             const visibleScale =
                 calculateScale(
                     baseViewport
@@ -826,17 +1044,11 @@
 
             /*
              * Render resolution
-             *
-             * Higher than visible size.
              */
-
-            const renderMultiplier =
-                getRenderMultiplier();
-
 
             const renderScale =
                 visibleScale *
-                renderMultiplier *
+                getRenderMultiplier() *
                 zoomLevel;
 
 
@@ -848,7 +1060,7 @@
 
 
             /*
-             * Page element
+             * PAGE ELEMENT
              */
 
             const pageElement =
@@ -861,10 +1073,6 @@
                 "page " +
                 position;
 
-
-            /*
-             * CSS display size
-             */
 
             pageElement.style.width =
                 (
@@ -883,7 +1091,7 @@
 
 
             /*
-             * Canvas
+             * CANVAS
              */
 
             const canvas =
@@ -899,23 +1107,78 @@
 
 
             /*
-             * Physical canvas size
+             * Canvas dimensions
              */
 
-            canvas.width =
+            let canvasWidth =
                 Math.floor(
                     renderViewport.width
                 );
 
 
-            canvas.height =
+            let canvasHeight =
                 Math.floor(
                     renderViewport.height
                 );
 
 
             /*
-             * Display canvas size
+             * iOS safety limit
+             *
+             * Keep each canvas under
+             * approximately 12 million
+             * pixels.
+             */
+
+            const maxCanvasPixels =
+                isMobile()
+                    ? 12000000
+                    : 18000000;
+
+
+            const canvasPixels =
+                canvasWidth *
+                canvasHeight;
+
+
+            if (
+                canvasPixels >
+                maxCanvasPixels
+            ) {
+
+                const reduction =
+                    Math.sqrt(
+                        maxCanvasPixels /
+                        canvasPixels
+                    );
+
+
+                canvasWidth =
+                    Math.floor(
+                        canvasWidth *
+                        reduction
+                    );
+
+
+                canvasHeight =
+                    Math.floor(
+                        canvasHeight *
+                        reduction
+                    );
+
+            }
+
+
+            canvas.width =
+                canvasWidth;
+
+
+            canvas.height =
+                canvasHeight;
+
+
+            /*
+             * Display size
              */
 
             canvas.style.width =
@@ -940,8 +1203,32 @@
 
 
             /*
-             * Render
+             * Actual render viewport
              */
+
+            const actualScaleX =
+                canvasWidth /
+                visibleViewport.width;
+
+
+            const actualScaleY =
+                canvasHeight /
+                visibleViewport.height;
+
+
+            const actualScale =
+                Math.min(
+                    actualScaleX,
+                    actualScaleY
+                );
+
+
+            const actualViewport =
+                page.getViewport({
+                    scale:
+                        actualScale
+                });
+
 
             await page.render({
 
@@ -949,13 +1236,13 @@
                     context,
 
                 viewport:
-                    renderViewport
+                    actualViewport
 
             }).promise;
 
 
             /*
-             * PDF LINKS
+             * ANNOTATIONS
              */
 
             const annotationLayer =
@@ -992,13 +1279,6 @@
 
                 }
 
-
-                /*
-                 * Coordinates need to use
-                 * the visible scale and
-                 * zoom level, not the
-                 * render scale.
-                 */
 
                 const rect =
                     annotation.rect;
@@ -1185,8 +1465,9 @@
 
 
                     /*
-                     * Don't use page click
-                     * during zoom.
+                     * When zoomed, a click
+                     * shouldn't turn into
+                     * page navigation.
                      */
 
                     if (
@@ -1275,128 +1556,7 @@
 
 
             /*
-             * Mobile:
-             *
-             * still two pages.
-             *
-             * Cover and back cover
-             * stay single.
-             */
-
-            if (
-                isMobile()
-            ) {
-
-                if (
-                    currentPage === 1
-                ) {
-
-                    const page =
-                        await renderPage(
-                            1,
-                            "single"
-                        );
-
-
-                    container.appendChild(
-                        page
-                    );
-
-
-                    return {
-
-                        container:
-                            container,
-
-                        label:
-                            "1 / 50"
-
-                    };
-
-                }
-
-
-                if (
-                    currentPage === 50
-                ) {
-
-                    const page =
-                        await renderPage(
-                            50,
-                            "single"
-                        );
-
-
-                    container.appendChild(
-                        page
-                    );
-
-
-                    return {
-
-                        container:
-                            container,
-
-                        label:
-                            "50 / 50"
-
-                    };
-
-                }
-
-
-                /*
-                 * Mobile spread
-                 */
-
-                container.className =
-                    "spread";
-
-
-                const left =
-                    await renderPage(
-                        currentPage,
-                        "left"
-                    );
-
-
-                const right =
-                    await renderPage(
-                        currentPage + 1,
-                        "right"
-                    );
-
-
-                container.appendChild(
-                    left
-                );
-
-
-                container.appendChild(
-                    right
-                );
-
-
-                return {
-
-                    container:
-                        container,
-
-                    label:
-                        currentPage +
-                        "–" +
-                        (
-                            currentPage + 1
-                        ) +
-                        " / 50"
-
-                };
-
-            }
-
-
-            /*
-             * Desktop cover
+             * COVER
              */
 
             if (
@@ -1429,7 +1589,7 @@
 
 
             /*
-             * Desktop back cover
+             * BACK COVER
              */
 
             if (
@@ -1462,7 +1622,7 @@
 
 
             /*
-             * Desktop spread
+             * SPREAD
              */
 
             container.className =
@@ -1513,17 +1673,27 @@
 
         /*
          * SHOW PAGES
-         *
-         * Render first.
-         * Replace second.
          */
 
         async function showPages() {
 
 
+            /*
+             * Build first.
+             *
+             * The old spread remains
+             * visible while PDF.js
+             * renders the new spread.
+             */
+
             const result =
                 await buildPages();
 
+
+            /*
+             * Replace only when
+             * everything is ready.
+             */
 
             book.replaceChildren(
                 result.container
@@ -1533,16 +1703,22 @@
             pageNumber.textContent =
                 result.label;
 
+
+            clampPan();
+
+            applyTransform();
+
         }
 
 
         /*
-         * NAVIGATE
+         * NAVIGATE TO
          */
 
         async function navigateTo(
             target
         ) {
+
 
             if (
                 changingPage
@@ -1552,10 +1728,6 @@
 
             }
 
-
-            /*
-             * Keep inside bounds
-             */
 
             target =
                 Math.max(
@@ -1569,9 +1741,8 @@
 
             /*
              * Desktop:
-             * internal links should
-             * open on the correct
-             * left page of a spread.
+             * internal links land on
+             * the left page of a spread.
              */
 
             if (
@@ -1592,6 +1763,10 @@
 
             currentPage =
                 target;
+
+
+            panX = 0;
+            panY = 0;
 
 
             try {
@@ -1627,67 +1802,30 @@
 
 
             if (
-                isMobile()
+                currentPage === 1
             ) {
 
-                if (
-                    currentPage >= 50
-                ) {
+                currentPage = 2;
 
-                    return;
+            }
 
-                }
-
+            else if (
+                currentPage < 48
+            ) {
 
                 currentPage += 2;
-
-
-                /*
-                 * If we reach page 49,
-                 * display 49–50.
-                 * Since 50 is the back
-                 * cover, we instead
-                 * stop on 48–49 and
-                 * make 50 accessible
-                 * only through the
-                 * next click.
-                 */
-
-                if (
-                    currentPage === 50
-                ) {
-
-                    currentPage = 50;
-
-                }
 
             }
 
             else {
 
-                if (
-                    currentPage === 1
-                ) {
-
-                    currentPage = 2;
-
-                }
-
-                else if (
-                    currentPage < 48
-                ) {
-
-                    currentPage += 2;
-
-                }
-
-                else {
-
-                    currentPage = 50;
-
-                }
+                currentPage = 50;
 
             }
+
+
+            panX = 0;
+            panY = 0;
 
 
             changingPage =
@@ -1727,56 +1865,30 @@
 
 
             if (
-                isMobile()
+                currentPage === 50
             ) {
 
-                if (
-                    currentPage <= 1
-                ) {
+                currentPage = 48;
 
-                    return;
+            }
 
-                }
-
+            else if (
+                currentPage > 2
+            ) {
 
                 currentPage -= 2;
-
-
-                if (
-                    currentPage < 1
-                ) {
-
-                    currentPage = 1;
-
-                }
 
             }
 
             else {
 
-                if (
-                    currentPage === 50
-                ) {
-
-                    currentPage = 48;
-
-                }
-
-                else if (
-                    currentPage > 2
-                ) {
-
-                    currentPage -= 2;
-
-                }
-
-                else {
-
-                    currentPage = 1;
-
-                }
+                currentPage = 1;
 
             }
+
+
+            panX = 0;
+            panY = 0;
 
 
             changingPage =
@@ -1800,7 +1912,7 @@
 
 
         /*
-         * ZOOM
+         * SET ZOOM
          */
 
         async function setZoom(
@@ -1822,23 +1934,22 @@
                 value;
 
 
+            if (
+                zoomLevel === 1
+            ) {
+
+                panX = 0;
+                panY = 0;
+
+            }
+
+
             zoomResetButton.textContent =
                 zoomLevel.toFixed(1) +
                 "×";
 
 
-            /*
-             * Re-render at the
-             * new resolution.
-             */
-
-            if (
-                pdf
-            ) {
-
-                await showPages();
-
-            }
+            await showPages();
 
         }
 
@@ -1888,12 +1999,167 @@
 
 
         /*
-         * TOUCH PINCH
+         * POINTER DOWN
          */
 
-        document.addEventListener(
+        bookShell.addEventListener(
+            "pointerdown",
+            function(event) {
+
+
+                if (
+                    zoomLevel <= 1
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    event.target.closest(
+                        "#controls"
+                    ) ||
+                    event.target.closest(
+                        "#zoomControls"
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                dragging = true;
+
+
+                dragStartX =
+                    event.clientX;
+
+
+                dragStartY =
+                    event.clientY;
+
+
+                dragStartPanX =
+                    panX;
+
+
+                dragStartPanY =
+                    panY;
+
+
+                try {
+
+                    bookShell.setPointerCapture(
+                        event.pointerId
+                    );
+
+                }
+
+                catch (
+                    error
+                ) {}
+
+            }
+        );
+
+
+        /*
+         * POINTER MOVE
+         */
+
+        bookShell.addEventListener(
+            "pointermove",
+            function(event) {
+
+
+                if (
+                    !dragging
+                ) {
+
+                    return;
+
+                }
+
+
+                const dx =
+                    event.clientX -
+                    dragStartX;
+
+
+                const dy =
+                    event.clientY -
+                    dragStartY;
+
+
+                panX =
+                    dragStartPanX +
+                    dx;
+
+
+                panY =
+                    dragStartPanY +
+                    dy;
+
+
+                clampPan();
+
+                applyTransform();
+
+            }
+        );
+
+
+        /*
+         * POINTER UP
+         */
+
+        bookShell.addEventListener(
+            "pointerup",
+            function(event) {
+
+                dragging = false;
+
+
+                try {
+
+                    bookShell.releasePointerCapture(
+                        event.pointerId
+                    );
+
+                }
+
+                catch (
+                    error
+                ) {}
+
+            }
+        );
+
+
+        /*
+         * POINTER CANCEL
+         */
+
+        bookShell.addEventListener(
+            "pointercancel",
+            function() {
+
+                dragging = false;
+
+            }
+        );
+
+
+        /*
+         * PINCH START
+         */
+
+        bookShell.addEventListener(
             "touchstart",
             function(event) {
+
 
                 if (
                     event.touches.length !== 2
@@ -1932,6 +2198,28 @@
                 pinchStartZoom =
                     zoomLevel;
 
+
+                pinchStartPanX =
+                    panX;
+
+
+                pinchStartPanY =
+                    panY;
+
+
+                pinchStartMidX =
+                    (
+                        first.clientX +
+                        second.clientX
+                    ) / 2;
+
+
+                pinchStartMidY =
+                    (
+                        first.clientY +
+                        second.clientY
+                    ) / 2;
+
             },
             {
                 passive: true
@@ -1939,9 +2227,14 @@
         );
 
 
-        document.addEventListener(
+        /*
+         * PINCH MOVE
+         */
+
+        bookShell.addEventListener(
             "touchmove",
             function(event) {
+
 
                 if (
                     event.touches.length !== 2
@@ -1959,6 +2252,9 @@
                     return;
 
                 }
+
+
+                event.preventDefault();
 
 
                 const first =
@@ -1979,7 +2275,7 @@
                     second.clientY;
 
 
-                const currentDistance =
+                const distance =
                     Math.hypot(
                         dx,
                         dy
@@ -1987,7 +2283,7 @@
 
 
                 const ratio =
-                    currentDistance /
+                    distance /
                     pinchStartDistance;
 
 
@@ -2006,30 +2302,64 @@
                     );
 
 
-                /*
-                 * During pinch we only
-                 * resize the already
-                 * rendered page.
-                 *
-                 * This keeps the gesture
-                 * smooth.
-                 */
+                const midX =
+                    (
+                        first.clientX +
+                        second.clientX
+                    ) / 2;
 
-                book.style.transform =
-                    "scale(" +
-                    newZoom +
-                    ")";
+
+                const midY =
+                    (
+                        first.clientY +
+                        second.clientY
+                    ) / 2;
+
+
+                panX =
+                    pinchStartPanX +
+                    (
+                        midX -
+                        pinchStartMidX
+                    );
+
+
+                panY =
+                    pinchStartPanY +
+                    (
+                        midY -
+                        pinchStartMidY
+                    );
+
+
+                zoomLevel =
+                    newZoom;
+
+
+                clampPan();
+
+                applyTransform();
+
+
+                zoomResetButton.textContent =
+                    zoomLevel.toFixed(1) +
+                    "×";
 
             },
             {
-                passive: true
+                passive: false
             }
         );
 
 
-        document.addEventListener(
+        /*
+         * PINCH END
+         */
+
+        bookShell.addEventListener(
             "touchend",
             async function(event) {
+
 
                 if (
                     event.touches.length !== 0
@@ -2049,59 +2379,19 @@
                 }
 
 
-                /*
-                 * Read current scale
-                 * from CSS transform.
-                 *
-                 * Simpler approach:
-                 * reset transform and
-                 * render at the final
-                 * zoom level.
-                 */
-
-                const transform =
-                    book.style.transform;
-
-
-                const match =
-                    transform.match(
-                        /scale\(([^)]+)\)/
-                    );
-
-
-                if (
-                    match
-                ) {
-
-                    let finalZoom =
-                        parseFloat(
-                            match[1]
-                        );
-
-
-                    finalZoom =
-                        Math.max(
-                            1,
-                            Math.min(
-                                getMaxZoom(),
-                                finalZoom
-                            )
-                        );
-
-
-                    zoomLevel =
-                        finalZoom;
-
-                }
-
-
-                book.style.transform =
-                    "scale(1)";
-
-
                 pinchStartDistance =
                     null;
 
+
+                clampPan();
+
+                applyTransform();
+
+
+                /*
+                 * Re-render at final
+                 * resolution.
+                 */
 
                 await showPages();
 
@@ -2110,23 +2400,7 @@
 
 
         /*
-         * PREVIOUS BUTTON
-         */
-
-        previous.addEventListener(
-            "click",
-            function(event) {
-
-                event.stopPropagation();
-
-                previousPage();
-
-            }
-        );
-
-
-        /*
-         * NEXT BUTTON
+         * BUTTONS
          */
 
         next.addEventListener(
@@ -2141,6 +2415,18 @@
         );
 
 
+        previous.addEventListener(
+            "click",
+            function(event) {
+
+                event.stopPropagation();
+
+                previousPage();
+
+            }
+        );
+
+
         /*
          * KEYBOARD
          */
@@ -2148,6 +2434,7 @@
         document.addEventListener(
             "keydown",
             function(event) {
+
 
                 if (
                     event.key ===
@@ -2220,6 +2507,7 @@
                     setTimeout(
                         async function() {
 
+
                             if (
                                 !pdf ||
                                 changingPage
@@ -2230,14 +2518,12 @@
                             }
 
 
-                            /*
-                             * Return to 1x
-                             * when orientation
-                             * or screen size
-                             * changes significantly.
-                             */
+                            panX = 0;
+                            panY = 0;
+
 
                             zoomLevel = 1;
+
 
                             zoomResetButton.textContent =
                                 "1×";
