@@ -22,44 +22,58 @@
 
         html,
         body {
+
             margin: 0;
+
             width: 100%;
             height: 100%;
+
             overflow: hidden;
+
             background: #eeeeee;
+
         }
 
 
         body {
+
             display: flex;
+
             align-items: center;
             justify-content: center;
+
         }
 
 
         #book {
+
             position: relative;
 
             width: 92vw;
             height: 88vh;
 
             display: flex;
+
             align-items: center;
             justify-content: center;
+
         }
 
 
         .spread {
+
             position: relative;
 
             display: flex;
 
             align-items: stretch;
             justify-content: center;
+
         }
 
 
         .page {
+
             position: relative;
 
             background: #ffffff;
@@ -67,38 +81,42 @@
             overflow: hidden;
 
             cursor: pointer;
+
         }
 
 
         .page canvas {
+
             display: block;
 
             width: 100%;
             height: 100%;
+
         }
 
 
         /*
-         * SINGLE PAGE
+         * ORIGINAL SINGLE PAGE SHADOW
          */
 
         .page.single {
 
             box-shadow:
-                0 8px 30px
+                0 5px 25px
                 rgba(0, 0, 0, 0.12);
 
         }
 
 
         /*
-         * LEFT PAGE
+         * ORIGINAL LEFT PAGE SHADOW
          */
 
         .page.left {
 
             box-shadow:
-                -4px 8px 30px
+
+                -4px 5px 25px
                 rgba(0, 0, 0, 0.10),
 
                 inset -8px 0 15px -15px
@@ -108,13 +126,14 @@
 
 
         /*
-         * RIGHT PAGE
+         * ORIGINAL RIGHT PAGE SHADOW
          */
 
         .page.right {
 
             box-shadow:
-                4px 8px 30px
+
+                4px 5px 25px
                 rgba(0, 0, 0, 0.10),
 
                 inset 8px 0 15px -15px
@@ -124,7 +143,7 @@
 
 
         /*
-         * CENTER SHADOW
+         * ORIGINAL CENTER SHADOW
          */
 
         .spread::after {
@@ -419,6 +438,8 @@
 
         let currentPage = 1;
 
+        let changingPage = false;
+
 
         /*
          * LOAD PDF
@@ -608,7 +629,7 @@
 
 
             /*
-             * PDF ANNOTATIONS
+             * PDF ANNOTATION LAYER
              */
 
             const annotationLayer =
@@ -785,7 +806,9 @@
                                     target === 1
                                 ) {
 
-                                    currentPage = 1;
+                                    await navigateTo(
+                                        1
+                                    );
 
                                 }
 
@@ -798,7 +821,9 @@
                                     target === 50
                                 ) {
 
-                                    currentPage = 50;
+                                    await navigateTo(
+                                        50
+                                    );
 
                                 }
 
@@ -811,26 +836,26 @@
                                     target % 2 === 0
                                 ) {
 
-                                    currentPage =
-                                        target;
+                                    await navigateTo(
+                                        target
+                                    );
 
                                 }
 
                                 else {
 
-                                    currentPage =
-                                        target - 1;
+                                    await navigateTo(
+                                        target - 1
+                                    );
 
                                 }
-
-
-                                await showPages();
 
                             }
 
                             catch (error) {
 
                                 console.error(
+                                    "Internal PDF link error:",
                                     error
                                 );
 
@@ -850,7 +875,7 @@
 
 
             /*
-             * CLICK ON PAGE
+             * PAGE CLICK
              */
 
             pageElement.addEventListener(
@@ -859,7 +884,7 @@
 
 
                     /*
-                     * Don't navigate if
+                     * Don't navigate when
                      * clicking a PDF link.
                      */
 
@@ -875,7 +900,7 @@
 
 
                     /*
-                     * COVER
+                     * FIRST PAGE
                      */
 
                     if (
@@ -890,7 +915,7 @@
 
 
                     /*
-                     * BACK COVER
+                     * LAST PAGE
                      */
 
                     if (
@@ -941,17 +966,29 @@
 
 
         /*
-         * SHOW CURRENT PAGES
+         * PREPARE NEXT VIEW
+         *
+         * IMPORTANT:
+         *
+         * We render everything first
+         * and only replace the visible
+         * book after the new content
+         * is completely ready.
+         *
+         * This removes the white flash.
          */
 
-        async function showPages() {
+        async function buildPages() {
 
 
-            book.innerHTML = "";
+            const container =
+                document.createElement(
+                    "div"
+                );
 
 
             /*
-             * FIRST PAGE
+             * COVER
              */
 
             if (
@@ -965,22 +1002,21 @@
                     );
 
 
-                book.appendChild(
+                container.appendChild(
                     page
                 );
 
 
-                pageNumber.textContent =
-                    "1 / 50";
-
-
-                return;
+                return {
+                    container,
+                    label: "1 / 50"
+                };
 
             }
 
 
             /*
-             * LAST PAGE
+             * BACK COVER
              */
 
             if (
@@ -994,31 +1030,24 @@
                     );
 
 
-                book.appendChild(
+                container.appendChild(
                     page
                 );
 
 
-                pageNumber.textContent =
-                    "50 / 50";
-
-
-                return;
+                return {
+                    container,
+                    label: "50 / 50"
+                };
 
             }
 
 
             /*
-             * DOUBLE PAGE
+             * NORMAL SPREAD
              */
 
-            const spread =
-                document.createElement(
-                    "div"
-                );
-
-
-            spread.className =
+            container.className =
                 "spread";
 
 
@@ -1036,98 +1065,207 @@
                 );
 
 
-            spread.appendChild(
+            container.appendChild(
                 left
             );
 
 
-            spread.appendChild(
+            container.appendChild(
                 right
             );
 
 
-            book.appendChild(
-                spread
+            return {
+                container,
+                label:
+                    currentPage +
+                    "–" +
+                    (
+                        currentPage + 1
+                    ) +
+                    " / 50"
+            };
+
+        }
+
+
+        /*
+         * SHOW PAGES
+         *
+         * The old content stays
+         * visible until the new
+         * content is completely
+         * rendered.
+         */
+
+        async function showPages() {
+
+            const result =
+                await buildPages();
+
+
+            /*
+             * Atomic replacement
+             */
+
+            book.replaceChildren(
+                result.container
             );
 
 
             pageNumber.textContent =
-                currentPage +
-                "–" +
-                (
-                    currentPage + 1
-                ) +
-                " / 50";
+                result.label;
 
         }
 
 
         /*
-         * NEXT PAGE
+         * NAVIGATE TO EXACT PAGE
+         */
+
+        async function navigateTo(
+            target
+        ) {
+
+            if (
+                changingPage
+            ) {
+
+                return;
+
+            }
+
+
+            changingPage = true;
+
+
+            currentPage =
+                target;
+
+
+            try {
+
+                await showPages();
+
+            }
+
+            finally {
+
+                changingPage = false;
+
+            }
+
+        }
+
+
+        /*
+         * NEXT
          */
 
         async function nextPage() {
 
-
             if (
-                currentPage === 1
+                changingPage
             ) {
 
-                currentPage = 2;
-
-            }
-
-            else if (
-                currentPage < 48
-            ) {
-
-                currentPage += 2;
-
-            }
-
-            else {
-
-                currentPage = 50;
+                return;
 
             }
 
 
-            await showPages();
+            changingPage = true;
+
+
+            try {
+
+                if (
+                    currentPage === 1
+                ) {
+
+                    currentPage = 2;
+
+                }
+
+                else if (
+                    currentPage < 48
+                ) {
+
+                    currentPage += 2;
+
+                }
+
+                else {
+
+                    currentPage = 50;
+
+                }
+
+
+                await showPages();
+
+            }
+
+            finally {
+
+                changingPage = false;
+
+            }
 
         }
 
 
         /*
-         * PREVIOUS PAGE
+         * PREVIOUS
          */
 
         async function previousPage() {
 
-
             if (
-                currentPage === 50
+                changingPage
             ) {
 
-                currentPage = 48;
-
-            }
-
-            else if (
-                currentPage > 2
-            ) {
-
-                currentPage -= 2;
-
-            }
-
-            else {
-
-                currentPage = 1;
+                return;
 
             }
 
 
-            await showPages();
+            changingPage = true;
+
+
+            try {
+
+                if (
+                    currentPage === 50
+                ) {
+
+                    currentPage = 48;
+
+                }
+
+                else if (
+                    currentPage > 2
+                ) {
+
+                    currentPage -= 2;
+
+                }
+
+                else {
+
+                    currentPage = 1;
+
+                }
+
+
+                await showPages();
+
+            }
+
+            finally {
+
+                changingPage = false;
+
+            }
 
         }
 
@@ -1186,6 +1324,50 @@
                     previousPage();
 
                 }
+
+            }
+        );
+
+
+        /*
+         * RESIZE
+         *
+         * Re-render only after
+         * the window has stopped
+         * resizing.
+         */
+
+        let resizeTimer;
+
+
+        window.addEventListener(
+            "resize",
+            function() {
+
+                clearTimeout(
+                    resizeTimer
+                );
+
+
+                resizeTimer =
+                    setTimeout(
+                        async function() {
+
+                            if (
+                                !pdf ||
+                                changingPage
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            await showPages();
+
+                        },
+                        150
+                    );
 
             }
         );
