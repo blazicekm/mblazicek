@@ -92,7 +92,7 @@
 
 
         /*
-         * SPREAD
+         * NORMAL SPREAD
          */
 
         .spread {
@@ -137,7 +137,7 @@
 
 
         /*
-         * SINGLE PAGE SHADOW
+         * SINGLE PAGE
          */
 
         .page.single {
@@ -155,7 +155,7 @@
 
 
         /*
-         * LEFT PAGE SHADOW
+         * LEFT PAGE
          */
 
         .page.left {
@@ -182,7 +182,7 @@
 
 
         /*
-         * RIGHT PAGE SHADOW
+         * RIGHT PAGE
          */
 
         .page.right {
@@ -278,21 +278,6 @@
         }
 
 
-        .mobile-link {
-
-            position: absolute;
-
-            display: block;
-
-            z-index: 50;
-
-            pointer-events: auto;
-
-            cursor: pointer;
-
-        }
-
-
         /*
          * PDF LINKS
          */
@@ -323,8 +308,7 @@
         }
 
 
-        .annotation-link:hover,
-        .mobile-link:hover {
+        .annotation-link:hover {
 
             background:
                 rgba(
@@ -333,6 +317,17 @@
                     255,
                     0.06
                 );
+
+        }
+
+
+        .mobile-link {
+
+            position: absolute;
+
+            display: block;
+
+            cursor: pointer;
 
         }
 
@@ -504,14 +499,6 @@
             max-width: 700px
         ) {
 
-            #book {
-
-                left: 50%;
-                top: 50%;
-
-            }
-
-
             #controls {
 
                 bottom: 10px;
@@ -611,6 +598,10 @@
     <script>
 
 
+        /*
+         * PDF
+         */
+
         const PDF_URL =
             "../portfolio.pdf";
 
@@ -691,26 +682,28 @@
 
 
         /*
-         * PAN
+         * PAN STATE
          */
 
         let panX = 0;
 
         let panY = 0;
 
-        let dragStartX = 0;
+        let panStartX = 0;
 
-        let dragStartY = 0;
+        let panStartY = 0;
 
-        let dragStartPanX = 0;
+        let panStartPanX = 0;
 
-        let dragStartPanY = 0;
+        let panStartPanY = 0;
 
         let dragging = false;
 
+        let movedDuringTouch = false;
+
 
         /*
-         * PINCH
+         * PINCH STATE
          */
 
         let pinchStartDistance = null;
@@ -725,6 +718,10 @@
 
         let pinchStartMidY = 0;
 
+
+        /*
+         * RESIZE
+         */
 
         let resizeTimer;
 
@@ -741,7 +738,7 @@
 
 
         /*
-         * MOBILE RENDER QUALITY
+         * RENDER QUALITY
          */
 
         function getRenderMultiplier() {
@@ -781,7 +778,7 @@
 
 
         /*
-         * APPLY TRANSFORM
+         * APPLY POSITION
          */
 
         function applyTransform() {
@@ -836,22 +833,48 @@
             }
 
 
-            const extra =
-                zoomLevel - 1;
+            /*
+             * Calculate the actual
+             * amount the zoomed book
+             * extends beyond the viewport.
+             */
+
+            const bookWidth =
+                book.offsetWidth;
+
+
+            const bookHeight =
+                book.offsetHeight;
+
+
+            const scaledWidth =
+                bookWidth *
+                zoomLevel;
+
+
+            const scaledHeight =
+                bookHeight *
+                zoomLevel;
 
 
             const horizontalLimit =
-                (
-                    bookShell.clientWidth *
-                    extra
-                ) / 2;
+                Math.max(
+                    0,
+                    (
+                        scaledWidth -
+                        bookShell.clientWidth
+                    ) / 2
+                );
 
 
             const verticalLimit =
-                (
-                    bookShell.clientHeight *
-                    extra
-                ) / 2;
+                Math.max(
+                    0,
+                    (
+                        scaledHeight -
+                        bookShell.clientHeight
+                    ) / 2
+                );
 
 
             panX =
@@ -914,39 +937,49 @@
 
 
         /*
-         * CALCULATE PAGE SIZE
+         * CALCULATE VISIBLE SCALE
          */
 
         function calculateScale(
             viewport
         ) {
 
-            let maxPageWidth;
-
 
             if (
                 isMobile()
             ) {
 
-                maxPageWidth =
+                const maxPageWidth =
                     window.innerWidth *
                     0.47;
 
+
+                const maxHeight =
+                    window.innerHeight *
+                    0.78;
+
+
+                return Math.min(
+
+                    maxPageWidth /
+                        viewport.width,
+
+                    maxHeight /
+                        viewport.height
+
+                );
+
             }
 
-            else {
 
-                maxPageWidth =
-                    window.innerWidth *
-                    0.46;
-
-            }
+            const maxPageWidth =
+                window.innerWidth *
+                0.46;
 
 
             const maxHeight =
-                isMobile()
-                    ? window.innerHeight * 0.78
-                    : window.innerHeight * 0.86;
+                window.innerHeight *
+                0.86;
 
 
             return Math.min(
@@ -963,6 +996,185 @@
 
 
         /*
+         * ADD DESKTOP ANNOTATIONS
+         */
+
+        async function addAnnotations(
+            page,
+            layer,
+            displayScale
+        ) {
+
+
+            const viewport =
+                page.getViewport({
+                    scale:
+                        displayScale
+                });
+
+
+            const annotations =
+                await page.getAnnotations();
+
+
+            for (
+                const annotation
+                of annotations
+            ) {
+
+
+                if (
+                    annotation.subtype !==
+                    "Link"
+                ) {
+
+                    continue;
+
+                }
+
+
+                const rect =
+                    annotation.rect;
+
+
+                const link =
+                    document.createElement(
+                        "a"
+                    );
+
+
+                link.className =
+                    "annotation-link";
+
+
+                link.style.left =
+                    rect[0] *
+                    displayScale +
+                    "px";
+
+
+                link.style.top =
+                    viewport.height -
+                    rect[3] *
+                    displayScale +
+                    "px";
+
+
+                link.style.width =
+                    (
+                        rect[2] -
+                        rect[0]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                link.style.height =
+                    (
+                        rect[3] -
+                        rect[1]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                if (
+                    annotation.url
+                ) {
+
+                    link.href =
+                        annotation.url;
+
+                    link.target =
+                        "_blank";
+
+                    link.rel =
+                        "noopener noreferrer";
+
+                }
+
+                else if (
+                    annotation.dest
+                ) {
+
+                    link.href =
+                        "#";
+
+
+                    link.addEventListener(
+                        "click",
+                        async function(event) {
+
+                            event.preventDefault();
+
+                            event.stopPropagation();
+
+
+                            try {
+
+                                const destination =
+                                    await pdf
+                                        .getDestination(
+                                            annotation.dest
+                                        );
+
+
+                                if (
+                                    !destination
+                                ) {
+
+                                    return;
+
+                                }
+
+
+                                const pageRef =
+                                    destination[0];
+
+
+                                const index =
+                                    await pdf
+                                        .getPageIndex(
+                                            pageRef
+                                        );
+
+
+                                const target =
+                                    index + 1;
+
+
+                                await navigateTo(
+                                    target
+                                );
+
+                            }
+
+                            catch (
+                                error
+                            ) {
+
+                                console.error(
+                                    error
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                layer.appendChild(
+                    link
+                );
+
+            }
+
+        }
+
+
+        /*
          * RENDER DESKTOP PAGE
          */
 
@@ -970,6 +1182,7 @@
             pageNumberValue,
             position
         ) {
+
 
             const page =
                 await pdf.getPage(
@@ -1092,10 +1305,6 @@
             }).promise;
 
 
-            /*
-             * ANNOTATIONS
-             */
-
             const annotationLayer =
                 document.createElement(
                     "div"
@@ -1122,7 +1331,7 @@
 
 
             /*
-             * PAGE CLICK
+             * Desktop click navigation
              */
 
             pageElement.addEventListener(
@@ -1187,207 +1396,16 @@
 
 
         /*
-         * ADD PDF ANNOTATIONS
-         */
-
-        async function addAnnotations(
-            page,
-            layer,
-            displayScale
-        ) {
-
-
-            const viewport =
-                page.getViewport({
-                    scale: displayScale
-                });
-
-
-            const annotations =
-                await page.getAnnotations();
-
-
-            for (
-                const annotation
-                of annotations
-            ) {
-
-
-                if (
-                    annotation.subtype !==
-                    "Link"
-                ) {
-
-                    continue;
-
-                }
-
-
-                const rect =
-                    annotation.rect;
-
-
-                const left =
-                    rect[0] *
-                    displayScale;
-
-
-                const top =
-                    viewport.height -
-                    rect[3] *
-                    displayScale;
-
-
-                const width =
-                    (
-                        rect[2] -
-                        rect[0]
-                    ) *
-                    displayScale;
-
-
-                const height =
-                    (
-                        rect[3] -
-                        rect[1]
-                    ) *
-                    displayScale;
-
-
-                const link =
-                    document.createElement(
-                        "a"
-                    );
-
-
-                link.className =
-                    "annotation-link";
-
-
-                link.style.left =
-                    left + "px";
-
-
-                link.style.top =
-                    top + "px";
-
-
-                link.style.width =
-                    width + "px";
-
-
-                link.style.height =
-                    height + "px";
-
-
-                if (
-                    annotation.url
-                ) {
-
-                    link.href =
-                        annotation.url;
-
-                    link.target =
-                        "_blank";
-
-                    link.rel =
-                        "noopener noreferrer";
-
-                }
-
-
-                else if (
-                    annotation.dest
-                ) {
-
-                    link.href =
-                        "#";
-
-
-                    link.addEventListener(
-                        "click",
-                        async function(event) {
-
-                            event.preventDefault();
-
-                            event.stopPropagation();
-
-
-                            try {
-
-                                const destination =
-                                    await pdf
-                                        .getDestination(
-                                            annotation.dest
-                                        );
-
-
-                                if (
-                                    !destination
-                                ) {
-
-                                    return;
-
-                                }
-
-
-                                const pageRef =
-                                    destination[0];
-
-
-                                const index =
-                                    await pdf
-                                        .getPageIndex(
-                                            pageRef
-                                        );
-
-
-                                const target =
-                                    index + 1;
-
-
-                                await navigateTo(
-                                    target
-                                );
-
-                            }
-
-                            catch (
-                                error
-                            ) {
-
-                                console.error(
-                                    error
-                                );
-
-                            }
-
-                        }
-                    );
-
-                }
-
-
-                layer.appendChild(
-                    link
-                );
-
-            }
-
-        }
-
-
-        /*
-         * MOBILE COMBINED SPREAD
+         * RENDER MOBILE SPREAD
          *
-         * Both PDF pages are drawn
-         * into ONE canvas.
+         * Both pages share one canvas.
          */
 
         async function renderMobileSpread(
             leftPageNumber,
             rightPageNumber
         ) {
+
 
             const leftPage =
                 await pdf.getPage(
@@ -1413,18 +1431,14 @@
                 });
 
 
-            const pageRatio =
-                leftBase.width /
-                rightBase.width;
-
-
             const availableWidth =
                 window.innerWidth *
                 0.94;
 
 
             const pageWidth =
-                availableWidth / 2;
+                availableWidth /
+                2;
 
 
             const pageScale =
@@ -1454,10 +1468,11 @@
 
 
             /*
-             * Render resolution
+             * Render at a higher
+             * internal resolution.
              */
 
-            const renderMultiplier =
+            const desiredMultiplier =
                 getRenderMultiplier() *
                 zoomLevel;
 
@@ -1468,26 +1483,26 @@
                         leftViewport.width +
                         rightViewport.width
                     ) *
-                    renderMultiplier
+                    desiredMultiplier
                 );
 
 
             let canvasHeight =
                 Math.floor(
                     pageHeight *
-                    renderMultiplier
+                    desiredMultiplier
                 );
 
 
             /*
-             * iOS canvas protection
+             * Safari/iOS protection.
              */
 
             const maxPixels =
                 12500000;
 
 
-            let totalPixels =
+            const totalPixels =
                 canvasWidth *
                 canvasHeight;
 
@@ -1520,28 +1535,27 @@
             }
 
 
-            const actualMultiplierX =
-                canvasWidth /
-                (
-                    leftViewport.width +
-                    rightViewport.width
-                );
-
-
-            const actualMultiplierY =
-                canvasHeight /
-                pageHeight;
-
+            /*
+             * Actual render multiplier.
+             */
 
             const actualMultiplier =
                 Math.min(
-                    actualMultiplierX,
-                    actualMultiplierY
+
+                    canvasWidth /
+                        (
+                            leftViewport.width +
+                            rightViewport.width
+                        ),
+
+                    canvasHeight /
+                        pageHeight
+
                 );
 
 
             /*
-             * Container
+             * CONTAINER
              */
 
             const container =
@@ -1555,23 +1569,17 @@
 
 
             container.style.width =
-                (
-                    availableWidth *
-                    zoomLevel
-                ) +
+                availableWidth +
                 "px";
 
 
             container.style.height =
-                (
-                    pageHeight *
-                    zoomLevel
-                ) +
+                pageHeight +
                 "px";
 
 
             /*
-             * Canvas
+             * CANVAS
              */
 
             const canvas =
@@ -1595,18 +1603,12 @@
 
 
             canvas.style.width =
-                (
-                    availableWidth *
-                    zoomLevel
-                ) +
+                availableWidth +
                 "px";
 
 
             canvas.style.height =
-                (
-                    pageHeight *
-                    zoomLevel
-                ) +
+                pageHeight +
                 "px";
 
 
@@ -1616,7 +1618,7 @@
 
 
             /*
-             * Render left page
+             * LEFT PAGE
              */
 
             const leftRenderViewport =
@@ -1633,27 +1635,13 @@
                     context,
 
                 viewport:
-                    leftRenderViewport,
-
-                transform: [
-                    1,
-                    0,
-                    0,
-                    1,
-                    0,
-                    0
-                ]
+                    leftRenderViewport
 
             }).promise;
 
 
             /*
-             * Render right page
-             *
-             * We use the same PDF page
-             * render operation but move
-             * the canvas context to the
-             * right side first.
+             * RIGHT PAGE
              */
 
             context.save();
@@ -1679,16 +1667,7 @@
                     context,
 
                 viewport:
-                    rightRenderViewport,
-
-                transform: [
-                    1,
-                    0,
-                    0,
-                    1,
-                    0,
-                    0
-                ]
+                    rightRenderViewport
 
             }).promise;
 
@@ -1697,7 +1676,7 @@
 
 
             /*
-             * LINK LAYERS
+             * REAL PDF LINKS
              */
 
             await addMobileAnnotations(
@@ -1724,7 +1703,10 @@
 
 
             /*
-             * CLICK AREAS
+             * LEFT CLICK AREA
+             *
+             * Must sit underneath
+             * real PDF links.
              */
 
             const leftClick =
@@ -1746,18 +1728,12 @@
 
 
             leftClick.style.width =
-                (
-                    leftViewport.width *
-                    zoomLevel
-                ) +
+                leftViewport.width +
                 "px";
 
 
             leftClick.style.height =
-                (
-                    pageHeight *
-                    zoomLevel
-                ) +
+                pageHeight +
                 "px";
 
 
@@ -1769,11 +1745,13 @@
                 "click",
                 function(event) {
 
+
                     if (
-                        event.target.closest(
-                            ".real-mobile-link"
-                        )
+                        movedDuringTouch
                     ) {
+
+                        movedDuringTouch =
+                            false;
 
                         return;
 
@@ -1786,6 +1764,10 @@
             );
 
 
+            /*
+             * RIGHT CLICK AREA
+             */
+
             const rightClick =
                 document.createElement(
                     "div"
@@ -1797,10 +1779,7 @@
 
 
             rightClick.style.left =
-                (
-                    leftViewport.width *
-                    zoomLevel
-                ) +
+                leftViewport.width +
                 "px";
 
 
@@ -1809,18 +1788,12 @@
 
 
             rightClick.style.width =
-                (
-                    rightViewport.width *
-                    zoomLevel
-                ) +
+                rightViewport.width +
                 "px";
 
 
             rightClick.style.height =
-                (
-                    pageHeight *
-                    zoomLevel
-                ) +
+                pageHeight +
                 "px";
 
 
@@ -1832,11 +1805,13 @@
                 "click",
                 function(event) {
 
+
                     if (
-                        event.target.closest(
-                            ".real-mobile-link"
-                        )
+                        movedDuringTouch
                     ) {
+
+                        movedDuringTouch =
+                            false;
 
                         return;
 
@@ -1848,11 +1823,6 @@
                 }
             );
 
-
-            /*
-             * Add click areas beneath
-             * real PDF hyperlinks.
-             */
 
             container.appendChild(
                 leftClick
@@ -1881,7 +1851,7 @@
 
 
         /*
-         * MOBILE ANNOTATIONS
+         * MOBILE PDF LINKS
          */
 
         async function addMobileAnnotations(
@@ -1930,7 +1900,7 @@
 
 
                 link.className =
-                    "mobile-link real-mobile-link";
+                    "mobile-link annotation-link";
 
 
                 link.style.left =
@@ -2039,6 +2009,10 @@
                                     index + 1;
 
 
+                                movedDuringTouch =
+                                    false;
+
+
                                 await navigateTo(
                                     target
                                 );
@@ -2077,106 +2051,15 @@
         async function buildPages() {
 
 
-            /*
-             * MOBILE
-             *
-             * Cover / back cover
-             * remain single.
-             */
-
-            if (
-                isMobile()
-            ) {
-
-
-                if (
-                    currentPage === 1
-                ) {
-
-                    const page =
-                        await renderDesktopPage(
-                            1,
-                            "single"
-                        );
-
-
-                    const container =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    container.appendChild(
-                        page
-                    );
-
-
-                    return {
-
-                        container:
-                            container,
-
-                        label:
-                            "1 / 50"
-
-                    };
-
-                }
-
-
-                if (
-                    currentPage === 50
-                ) {
-
-                    const page =
-                        await renderDesktopPage(
-                            50,
-                            "single"
-                        );
-
-
-                    const container =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    container.appendChild(
-                        page
-                    );
-
-
-                    return {
-
-                        container:
-                            container,
-
-                        label:
-                            "50 / 50"
-
-                    };
-
-                }
-
-
-                return await
-                    renderMobileSpread(
-                        currentPage,
-                        currentPage + 1
-                    );
-
-            }
-
-
-            /*
-             * DESKTOP
-             */
-
             const container =
                 document.createElement(
                     "div"
                 );
 
+
+            /*
+             * COVER
+             */
 
             if (
                 currentPage === 1
@@ -2207,6 +2090,10 @@
             }
 
 
+            /*
+             * BACK COVER
+             */
+
             if (
                 currentPage === 50
             ) {
@@ -2235,6 +2122,27 @@
 
             }
 
+
+            /*
+             * MOBILE SPREAD
+             */
+
+            if (
+                isMobile()
+            ) {
+
+                return await
+                    renderMobileSpread(
+                        currentPage,
+                        currentPage + 1
+                    );
+
+            }
+
+
+            /*
+             * DESKTOP SPREAD
+             */
 
             container.className =
                 "spread";
@@ -2283,15 +2191,23 @@
 
 
         /*
-         * SHOW
+         * SHOW PAGES
          */
 
         async function showPages() {
 
 
+            /*
+             * Render everything first.
+             */
+
             const result =
                 await buildPages();
 
+
+            /*
+             * Then replace old view.
+             */
 
             book.replaceChildren(
                 result.container
@@ -2310,7 +2226,7 @@
 
 
         /*
-         * NAVIGATE
+         * NAVIGATE TO
          */
 
         async function navigateTo(
@@ -2378,7 +2294,7 @@
 
 
         /*
-         * NEXT
+         * NEXT PAGE
          */
 
         async function nextPage() {
@@ -2441,7 +2357,7 @@
 
 
         /*
-         * PREVIOUS
+         * PREVIOUS PAGE
          */
 
         async function previousPage() {
@@ -2504,7 +2420,7 @@
 
 
         /*
-         * ZOOM
+         * SET ZOOM
          */
 
         async function setZoom(
@@ -2527,6 +2443,7 @@
             ) {
 
                 panX = 0;
+
                 panY = 0;
 
             }
@@ -2587,143 +2504,12 @@
 
 
         /*
-         * POINTER DRAG
-         */
-
-        bookShell.addEventListener(
-            "pointerdown",
-            function(event) {
-
-
-                if (
-                    zoomLevel <= 1
-                ) {
-
-                    return;
-
-                }
-
-
-                if (
-                    event.target.closest(
-                        "#controls"
-                    ) ||
-                    event.target.closest(
-                        "#zoomControls"
-                    )
-                ) {
-
-                    return;
-
-                }
-
-
-                dragging = true;
-
-
-                dragStartX =
-                    event.clientX;
-
-
-                dragStartY =
-                    event.clientY;
-
-
-                dragStartPanX =
-                    panX;
-
-
-                dragStartPanY =
-                    panY;
-
-
-                try {
-
-                    bookShell.setPointerCapture(
-                        event.pointerId
-                    );
-
-                }
-
-                catch (
-                    error
-                ) {}
-
-            }
-        );
-
-
-        /*
-         * POINTER MOVE
-         */
-
-        bookShell.addEventListener(
-            "pointermove",
-            function(event) {
-
-
-                if (
-                    !dragging
-                ) {
-
-                    return;
-
-                }
-
-
-                panX =
-                    dragStartPanX +
-                    (
-                        event.clientX -
-                        dragStartX
-                    );
-
-
-                panY =
-                    dragStartPanY +
-                    (
-                        event.clientY -
-                        dragStartY
-                    );
-
-
-                clampPan();
-
-                applyTransform();
-
-            }
-        );
-
-
-        /*
-         * POINTER UP
-         */
-
-        bookShell.addEventListener(
-            "pointerup",
-            function(event) {
-
-                dragging = false;
-
-
-                try {
-
-                    bookShell.releasePointerCapture(
-                        event.pointerId
-                    );
-
-                }
-
-                catch (
-                    error
-                ) {}
-
-            }
-        );
-
-
-        /*
-         * PINCH START
+         * TOUCH START
+         *
+         * One finger = start panning
+         * when zoomed.
+         *
+         * Two fingers = pinch.
          */
 
         bookShell.addEventListener(
@@ -2731,64 +2517,103 @@
             function(event) {
 
 
+                movedDuringTouch =
+                    false;
+
+
+                /*
+                 * PINCH
+                 */
+
                 if (
-                    event.touches.length !== 2
+                    event.touches.length === 2
                 ) {
+
+                    const first =
+                        event.touches[0];
+
+
+                    const second =
+                        event.touches[1];
+
+
+                    const dx =
+                        first.clientX -
+                        second.clientX;
+
+
+                    const dy =
+                        first.clientY -
+                        second.clientY;
+
+
+                    pinchStartDistance =
+                        Math.hypot(
+                            dx,
+                            dy
+                        );
+
+
+                    pinchStartZoom =
+                        zoomLevel;
+
+
+                    pinchStartPanX =
+                        panX;
+
+
+                    pinchStartPanY =
+                        panY;
+
+
+                    pinchStartMidX =
+                        (
+                            first.clientX +
+                            second.clientX
+                        ) / 2;
+
+
+                    pinchStartMidY =
+                        (
+                            first.clientY +
+                            second.clientY
+                        ) / 2;
+
 
                     return;
 
                 }
 
 
-                const first =
-                    event.touches[0];
+                /*
+                 * ONE-FINGER PAN
+                 */
+
+                if (
+                    event.touches.length === 1 &&
+                    zoomLevel > 1
+                ) {
+
+                    const touch =
+                        event.touches[0];
 
 
-                const second =
-                    event.touches[1];
+                    panStartX =
+                        touch.clientX;
 
 
-                const dx =
-                    first.clientX -
-                    second.clientX;
+                    panStartY =
+                        touch.clientY;
 
 
-                const dy =
-                    first.clientY -
-                    second.clientY;
+                    panStartPanX =
+                        panX;
 
 
-                pinchStartDistance =
-                    Math.hypot(
-                        dx,
-                        dy
-                    );
+                    panStartPanY =
+                        panY;
 
-
-                pinchStartZoom =
-                    zoomLevel;
-
-
-                pinchStartPanX =
-                    panX;
-
-
-                pinchStartPanY =
-                    panY;
-
-
-                pinchStartMidX =
-                    (
-                        first.clientX +
-                        second.clientX
-                    ) / 2;
-
-
-                pinchStartMidY =
-                    (
-                        first.clientY +
-                        second.clientY
-                    ) / 2;
+                }
 
             },
             {
@@ -2798,7 +2623,7 @@
 
 
         /*
-         * PINCH MOVE
+         * TOUCH MOVE
          */
 
         bookShell.addEventListener(
@@ -2806,98 +2631,160 @@
             function(event) {
 
 
+                /*
+                 * PINCH + PAN
+                 */
+
                 if (
-                    event.touches.length !== 2 ||
-                    !pinchStartDistance
+                    event.touches.length === 2 &&
+                    pinchStartDistance
                 ) {
+
+                    event.preventDefault();
+
+
+                    const first =
+                        event.touches[0];
+
+
+                    const second =
+                        event.touches[1];
+
+
+                    const dx =
+                        first.clientX -
+                        second.clientX;
+
+
+                    const dy =
+                        first.clientY -
+                        second.clientY;
+
+
+                    const distance =
+                        Math.hypot(
+                            dx,
+                            dy
+                        );
+
+
+                    const ratio =
+                        distance /
+                        pinchStartDistance;
+
+
+                    zoomLevel =
+                        Math.max(
+                            1,
+                            Math.min(
+                                getMaxZoom(),
+                                pinchStartZoom *
+                                ratio
+                            )
+                        );
+
+
+                    const midX =
+                        (
+                            first.clientX +
+                            second.clientX
+                        ) / 2;
+
+
+                    const midY =
+                        (
+                            first.clientY +
+                            second.clientY
+                        ) / 2;
+
+
+                    panX =
+                        pinchStartPanX +
+                        (
+                            midX -
+                            pinchStartMidX
+                        );
+
+
+                    panY =
+                        pinchStartPanY +
+                        (
+                            midY -
+                            pinchStartMidY
+                        );
+
+
+                    clampPan();
+
+                    applyTransform();
+
+
+                    zoomResetButton.textContent =
+                        zoomLevel.toFixed(1) +
+                        "×";
+
+
+                    movedDuringTouch =
+                        true;
+
 
                     return;
 
                 }
 
 
-                event.preventDefault();
+                /*
+                 * ONE-FINGER PAN
+                 */
+
+                if (
+                    event.touches.length === 1 &&
+                    zoomLevel > 1
+                ) {
+
+                    event.preventDefault();
 
 
-                const first =
-                    event.touches[0];
+                    const touch =
+                        event.touches[0];
 
 
-                const second =
-                    event.touches[1];
+                    const dx =
+                        touch.clientX -
+                        panStartX;
 
 
-                const dx =
-                    first.clientX -
-                    second.clientX;
+                    const dy =
+                        touch.clientY -
+                        panStartY;
 
 
-                const dy =
-                    first.clientY -
-                    second.clientY;
+                    if (
+                        Math.abs(dx) > 4 ||
+                        Math.abs(dy) > 4
+                    ) {
+
+                        movedDuringTouch =
+                            true;
+
+                    }
 
 
-                const distance =
-                    Math.hypot(
-                        dx,
-                        dy
-                    );
+                    panX =
+                        panStartPanX +
+                        dx;
 
 
-                const ratio =
-                    distance /
-                    pinchStartDistance;
+                    panY =
+                        panStartPanY +
+                        dy;
 
 
-                zoomLevel =
-                    Math.max(
-                        1,
-                        Math.min(
-                            getMaxZoom(),
-                            pinchStartZoom *
-                            ratio
-                        )
-                    );
+                    clampPan();
 
+                    applyTransform();
 
-                const midX =
-                    (
-                        first.clientX +
-                        second.clientX
-                    ) / 2;
-
-
-                const midY =
-                    (
-                        first.clientY +
-                        second.clientY
-                    ) / 2;
-
-
-                panX =
-                    pinchStartPanX +
-                    (
-                        midX -
-                        pinchStartMidX
-                    );
-
-
-                panY =
-                    pinchStartPanY +
-                    (
-                        midY -
-                        pinchStartMidY
-                    );
-
-
-                clampPan();
-
-                applyTransform();
-
-
-                zoomResetButton.textContent =
-                    zoomLevel.toFixed(1) +
-                    "×";
+                }
 
             },
             {
@@ -2907,13 +2794,17 @@
 
 
         /*
-         * PINCH END
+         * TOUCH END
          */
 
         bookShell.addEventListener(
             "touchend",
             async function(event) {
 
+
+                /*
+                 * Still another finger down.
+                 */
 
                 if (
                     event.touches.length !== 0
@@ -2924,32 +2815,38 @@
                 }
 
 
+                /*
+                 * Finish pinch.
+                 */
+
                 if (
-                    !pinchStartDistance
+                    pinchStartDistance
                 ) {
 
-                    return;
+                    pinchStartDistance =
+                        null;
+
+
+                    clampPan();
+
+                    applyTransform();
+
+
+                    /*
+                     * Re-render at final
+                     * zoom resolution.
+                     */
+
+                    await showPages();
 
                 }
-
-
-                pinchStartDistance =
-                    null;
-
-
-                clampPan();
-
-                applyTransform();
-
-
-                await showPages();
 
             }
         );
 
 
         /*
-         * BUTTONS
+         * CONTROLS
          */
 
         previous.addEventListener(
@@ -3046,6 +2943,7 @@
         window.addEventListener(
             "resize",
             function() {
+
 
                 clearTimeout(
                     resizeTimer
