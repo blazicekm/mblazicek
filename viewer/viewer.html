@@ -148,7 +148,7 @@
         <button id="next">→</button>
     </div>
 
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <script>
     const PDF_URL = "../portfolio.pdf";
@@ -159,30 +159,54 @@
     const loading = document.getElementById("loading");
     const book = document.getElementById("book");
 
+    let pdf;
+
     async function loadPDF() {
 
-        try {
+        pdf = await pdfjsLib.getDocument(PDF_URL).promise;
 
-            const pdf = await pdfjsLib.getDocument(PDF_URL).promise;
+        loading.remove();
 
-            loading.textContent =
-                "PDF loaded — " + pdf.numPages + " pages";
+        await renderPage(1);
+    }
 
-            console.log("PDF loaded:", pdf.numPages);
+    async function renderPage(pageNumber) {
 
-        } catch (error) {
+        const page = await pdf.getPage(pageNumber);
 
-            loading.textContent =
-                "ERROR: " + error.message;
+        const viewport = page.getViewport({
+            scale: 1
+        });
 
-            console.error(error);
+        const maxWidth = window.innerWidth * 0.8;
+        const maxHeight = window.innerHeight * 0.85;
 
-        }
+        const scale = Math.min(
+            maxWidth / viewport.width,
+            maxHeight / viewport.height
+        );
 
+        const scaledViewport = page.getViewport({
+            scale: scale
+        });
+
+        const canvas = document.createElement("canvas");
+
+        const context = canvas.getContext("2d");
+
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+
+        book.innerHTML = "";
+        book.appendChild(canvas);
+
+        await page.render({
+            canvasContext: context,
+            viewport: scaledViewport
+        }).promise;
     }
 
     loadPDF();
 </script>
-
 </body>
 </html>
