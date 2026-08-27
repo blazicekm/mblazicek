@@ -1,48 +1,3436 @@
 <!DOCTYPE html>
 <html lang="sk">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
+    >
 
     <title>Matúš Blažíček — Portfolio</title>
 
+
     <style>
+
         * {
             box-sizing: border-box;
         }
 
+
         html,
         body {
+
             margin: 0;
+
             width: 100%;
             height: 100%;
+
             overflow: hidden;
-            background: #f5f5f5;
+
+            background: #f7f7f7;
+
         }
 
-        #viewer {
-            width: 100%;
-            height: 100%;
+
+        body {
+
             display: flex;
+
             align-items: center;
             justify-content: center;
+
+            touch-action: none;
+
         }
 
-        .loading {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
+
+        /*
+         * VIEWPORT
+         */
+
+        #book-shell {
+
+            position: relative;
+
+            width: 100vw;
+            height: 100vh;
+
+            overflow: hidden;
+
         }
+
+
+        /*
+         * BOOK
+         */
+
+        #book {
+
+            position: absolute;
+
+            left: 50%;
+            top: 50%;
+
+            display: block;
+
+            transform:
+                translate(
+                    -50%,
+                    -50%
+                );
+
+            transform-origin:
+                center center;
+
+            will-change:
+                transform;
+
+        }
+
+
+        /*
+         * SPREAD
+         */
+
+        .spread {
+
+            position: relative;
+
+            display: flex;
+
+            flex-direction: row;
+
+            align-items: stretch;
+
+            justify-content: center;
+
+            width: max-content;
+
+        }
+
+
+        /*
+         * PAGE
+         */
+
+        .page {
+
+            position: relative;
+
+            flex: 0 0 auto;
+
+            background: #ffffff;
+
+            overflow: hidden;
+
+            cursor: pointer;
+
+        }
+
+
+        .page canvas {
+
+            display: block;
+
+            width: 100%;
+            height: 100%;
+
+        }
+
+
+        /*
+         * SINGLE PAGE
+         */
+
+        .page.single {
+
+            box-shadow:
+                0 5px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
+
+        }
+
+
+        /*
+         * LEFT PAGE
+         */
+
+        .page.left {
+
+            box-shadow:
+
+                -4px 5px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.055
+                ),
+
+                inset -8px 0 15px -15px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.20
+                );
+
+        }
+
+
+        /*
+         * RIGHT PAGE
+         */
+
+        .page.right {
+
+            box-shadow:
+
+                4px 5px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.055
+                ),
+
+                inset 8px 0 15px -15px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.20
+                );
+
+        }
+
+
+        /*
+         * CENTER SHADOW
+         */
+
+        .spread::after {
+
+            content: "";
+
+            position: absolute;
+
+            top: 0;
+            bottom: 0;
+
+            left: 50%;
+
+            width: 18px;
+
+            transform:
+                translateX(-50%);
+
+            background:
+                linear-gradient(
+                    to right,
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0
+                    ),
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0.055
+                    ),
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0
+                    )
+                );
+
+            pointer-events: none;
+
+            z-index: 20;
+
+        }
+
+
+        /*
+         * PDF LINKS
+         */
+
+        .annotation-layer {
+
+            position: absolute;
+
+            inset: 0;
+
+            z-index: 50;
+
+            pointer-events: none;
+
+        }
+
+
+        .annotation-link {
+
+            position: absolute;
+
+            display: block;
+
+            pointer-events: auto;
+
+            cursor: pointer;
+
+        }
+
+
+        .annotation-link:hover {
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.06
+                );
+
+        }
+
+
+        /*
+         * MOBILE SPREAD
+         */
+
+        .mobile-spread {
+
+            position: relative;
+
+            background: #ffffff;
+
+            overflow: visible;
+
+        }
+
+
+        .mobile-spread canvas {
+
+            display: block;
+
+        }
+
+
+        .mobile-link {
+
+            position: absolute;
+
+            display: block;
+
+            cursor: pointer;
+
+        }
+
+
+        /*
+         * CONTROLS
+         */
+
+        #controls {
+
+            position: fixed;
+
+            left: 50%;
+            bottom: 20px;
+
+            transform:
+                translateX(-50%);
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 20px;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            font-size: 11px;
+
+            letter-spacing:
+                0.12em;
+
+            text-transform:
+                uppercase;
+
+            color: #333333;
+
+            z-index: 1000;
+
+            user-select: none;
+
+        }
+
+
+        #controls button {
+
+            border: none;
+
+            background: transparent;
+
+            padding: 8px;
+
+            color: #333333;
+
+            font-family: inherit;
+
+            font-size: inherit;
+
+            line-height: 1;
+
+            cursor: pointer;
+
+            touch-action: manipulation;
+
+        }
+
+
+        #controls button:hover {
+
+            opacity: 0.45;
+
+        }
+
+
+        #controls button:active {
+
+            opacity: 0.25;
+
+        }
+
+
+        #pageNumber {
+
+            min-width: 70px;
+
+            text-align: center;
+
+        }
+
+
+        /*
+         * ZOOM CONTROLS
+         */
+
+        #zoomControls {
+
+            position: fixed;
+
+            right: 20px;
+            bottom: 20px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            z-index: 1000;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            user-select: none;
+
+        }
+
+
+        #zoomControls button {
+
+            width: 28px;
+            height: 28px;
+
+            padding: 0;
+
+            border: none;
+
+            background: transparent;
+
+            color: #333333;
+
+            font-size: 16px;
+
+            line-height: 1;
+
+            cursor: pointer;
+
+            touch-action: manipulation;
+
+        }
+
+
+        #zoomControls button:hover {
+
+            opacity: 0.45;
+
+        }
+
+
+        /*
+         * LOADING
+         */
+
+        #loading {
+
+            position: fixed;
+
+            left: 50%;
+            top: 50%;
+
+            transform:
+                translate(
+                    -50%,
+                    -50%
+                );
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            font-size: 15px;
+
+            letter-spacing:
+                0.16em;
+
+            text-transform:
+                uppercase;
+
+            color: #333333;
+
+            white-space: nowrap;
+
+        }
+
+
+        /*
+         * MOBILE
+         */
+
+        @media (
+            max-width: 700px
+        ) {
+
+            #controls {
+
+                bottom: 10px;
+
+                gap: 14px;
+
+            }
+
+
+            #zoomControls {
+
+                right: 10px;
+
+                bottom: 10px;
+
+            }
+
+
+            #loading {
+
+                font-size: 13px;
+
+                letter-spacing:
+                    0.14em;
+
+            }
+
+        }
+
     </style>
+
 </head>
+
 
 <body>
 
-    <div id="viewer">
-        <div class="loading">Loading portfolio</div>
+
+    <div id="loading">
+
+        Loading portfolio
+
     </div>
 
-</body>
-</html>
 
+    <div id="book-shell">
+
+        <div id="book"></div>
+
+    </div>
+
+
+    <div id="controls">
+
+
+        <button
+            id="previous"
+            type="button"
+            aria-label="Previous page"
+        >
+
+            ←
+
+        </button>
+
+
+        <span id="pageNumber">
+
+            1 / 50
+
+        </span>
+
+
+        <button
+            id="next"
+            type="button"
+            aria-label="Next page"
+        >
+
+            →
+
+        </button>
+
+
+    </div>
+
+
+    <div id="zoomControls">
+
+
+        <button
+            id="zoomOut"
+            type="button"
+            aria-label="Zoom out"
+        >
+
+            −
+
+        </button>
+
+
+        <button
+            id="zoomReset"
+            type="button"
+            aria-label="Reset zoom"
+        >
+
+            1×
+
+        </button>
+
+
+        <button
+            id="zoomIn"
+            type="button"
+            aria-label="Zoom in"
+        >
+
+            +
+
+        </button>
+
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+
+    <script>
+
+
+        /*
+         * PDF
+         */
+
+        const PDF_URL =
+            "../portfolio.pdf";
+
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+
+        /*
+         * ELEMENTS
+         */
+
+        const loading =
+            document.getElementById(
+                "loading"
+            );
+
+
+        const book =
+            document.getElementById(
+                "book"
+            );
+
+
+        const bookShell =
+            document.getElementById(
+                "book-shell"
+            );
+
+
+        const pageNumber =
+            document.getElementById(
+                "pageNumber"
+            );
+
+
+        const previous =
+            document.getElementById(
+                "previous"
+            );
+
+
+        const next =
+            document.getElementById(
+                "next"
+            );
+
+
+        const zoomInButton =
+            document.getElementById(
+                "zoomIn"
+            );
+
+
+        const zoomOutButton =
+            document.getElementById(
+                "zoomOut"
+            );
+
+
+        const zoomResetButton =
+            document.getElementById(
+                "zoomReset"
+            );
+
+
+        /*
+         * STATE
+         */
+
+        let pdf;
+
+        let currentPage = 1;
+
+        let changingPage = false;
+
+        let zoomLevel = 1;
+
+
+        /*
+         * PAN
+         */
+
+        let panX = 0;
+
+        let panY = 0;
+
+        let panStartX = 0;
+
+        let panStartY = 0;
+
+        let panStartPanX = 0;
+
+        let panStartPanY = 0;
+
+        let dragging = false;
+
+
+        /*
+         * TOUCH
+         */
+
+        let movedDuringTouch = false;
+
+        let touchStartX = 0;
+
+        let touchStartY = 0;
+
+
+        /*
+         * PINCH
+         */
+
+        let pinchStartDistance = null;
+
+        let pinchStartZoom = 1;
+
+        let pinchStartPanX = 0;
+
+        let pinchStartPanY = 0;
+
+        let pinchStartMidX = 0;
+
+        let pinchStartMidY = 0;
+
+
+        /*
+         * RESIZE
+         */
+
+        let resizeTimer;
+
+
+        /*
+         * MOBILE
+         */
+
+        function isMobile() {
+
+            return window.innerWidth <= 700;
+
+        }
+
+
+        /*
+         * RENDER QUALITY
+         */
+
+        function getRenderMultiplier() {
+
+            if (
+                isMobile()
+            ) {
+
+                return 4;
+
+            }
+
+
+            return 2;
+
+        }
+
+
+        /*
+         * MAX ZOOM
+         */
+
+        function getMaxZoom() {
+
+            if (
+                isMobile()
+            ) {
+
+                return 4;
+
+            }
+
+
+            return 2.5;
+
+        }
+
+
+        /*
+         * APPLY TRANSFORM
+         */
+
+        function applyTransform() {
+
+
+            const x =
+                -50 +
+                (
+                    panX /
+                    bookShell.clientWidth
+                ) *
+                100;
+
+
+            const y =
+                -50 +
+                (
+                    panY /
+                    bookShell.clientHeight
+                ) *
+                100;
+
+
+            book.style.transform =
+                "translate(" +
+                x +
+                "%, " +
+                y +
+                "%) scale(" +
+                zoomLevel +
+                ")";
+
+        }
+
+
+        /*
+         * PAN LIMIT
+         */
+
+        function clampPan() {
+
+
+            if (
+                zoomLevel <= 1
+            ) {
+
+                panX = 0;
+
+                panY = 0;
+
+                return;
+
+            }
+
+
+            const bookWidth =
+                book.offsetWidth;
+
+
+            const bookHeight =
+                book.offsetHeight;
+
+
+            const scaledWidth =
+                bookWidth *
+                zoomLevel;
+
+
+            const scaledHeight =
+                bookHeight *
+                zoomLevel;
+
+
+            const horizontalLimit =
+                Math.max(
+
+                    0,
+
+                    (
+                        scaledWidth -
+                        bookShell.clientWidth
+                    ) / 2
+
+                );
+
+
+            const verticalLimit =
+                Math.max(
+
+                    0,
+
+                    (
+                        scaledHeight -
+                        bookShell.clientHeight
+                    ) / 2
+
+                );
+
+
+            panX =
+                Math.max(
+                    -horizontalLimit,
+                    Math.min(
+                        horizontalLimit,
+                        panX
+                    )
+                );
+
+
+            panY =
+                Math.max(
+                    -verticalLimit,
+                    Math.min(
+                        verticalLimit,
+                        panY
+                    )
+                );
+
+        }
+
+
+        /*
+         * LOAD PDF
+         */
+
+        async function loadPDF() {
+
+            try {
+
+                pdf =
+                    await pdfjsLib
+                        .getDocument(
+                            PDF_URL
+                        )
+                        .promise;
+
+
+                loading.remove();
+
+
+                await showPages();
+
+            }
+
+            catch (error) {
+
+                loading.textContent =
+                    "Error loading portfolio";
+
+                console.error(
+                    error
+                );
+
+            }
+
+        }
+
+
+        /*
+         * CALCULATE SCALE
+         */
+
+        function calculateScale(
+            viewport
+        ) {
+
+
+            if (
+                isMobile()
+            ) {
+
+                const pageWidth =
+                    (
+                        window.innerWidth *
+                        0.94
+                    ) / 2;
+
+
+                const maxHeight =
+                    window.innerHeight *
+                    0.78;
+
+
+                return Math.min(
+
+                    pageWidth /
+                        viewport.width,
+
+                    maxHeight /
+                        viewport.height
+
+                );
+
+            }
+
+
+            const pageWidth =
+                window.innerWidth *
+                0.46;
+
+
+            const maxHeight =
+                window.innerHeight *
+                0.86;
+
+
+            return Math.min(
+
+                pageWidth /
+                    viewport.width,
+
+                maxHeight /
+                    viewport.height
+
+            );
+
+        }
+
+
+        /*
+         * DESKTOP PAGE
+         */
+
+        async function renderDesktopPage(
+            pageNumberValue,
+            position
+        ) {
+
+
+            const page =
+                await pdf.getPage(
+                    pageNumberValue
+                );
+
+
+            const baseViewport =
+                page.getViewport({
+                    scale: 1
+                });
+
+
+            const visibleScale =
+                calculateScale(
+                    baseViewport
+                );
+
+
+            const visibleViewport =
+                page.getViewport({
+                    scale:
+                        visibleScale
+                });
+
+
+            const renderScale =
+                visibleScale *
+                getRenderMultiplier() *
+                zoomLevel;
+
+
+            const renderViewport =
+                page.getViewport({
+                    scale:
+                        renderScale
+                });
+
+
+            const pageElement =
+                document.createElement(
+                    "div"
+                );
+
+
+            pageElement.className =
+                "page " +
+                position;
+
+
+            pageElement.style.width =
+                (
+                    visibleViewport.width *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            pageElement.style.height =
+                (
+                    visibleViewport.height *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            /*
+             * CANVAS
+             */
+
+            const canvas =
+                document.createElement(
+                    "canvas"
+                );
+
+
+            const context =
+                canvas.getContext(
+                    "2d"
+                );
+
+
+            canvas.width =
+                Math.floor(
+                    renderViewport.width
+                );
+
+
+            canvas.height =
+                Math.floor(
+                    renderViewport.height
+                );
+
+
+            canvas.style.width =
+                (
+                    visibleViewport.width *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            canvas.style.height =
+                (
+                    visibleViewport.height *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            pageElement.appendChild(
+                canvas
+            );
+
+
+            await page.render({
+
+                canvasContext:
+                    context,
+
+                viewport:
+                    renderViewport
+
+            }).promise;
+
+
+            /*
+             * PDF LINKS
+             */
+
+            const annotationLayer =
+                document.createElement(
+                    "div"
+                );
+
+
+            annotationLayer.className =
+                "annotation-layer";
+
+
+            pageElement.appendChild(
+                annotationLayer
+            );
+
+
+            await addAnnotations(
+
+                page,
+
+                annotationLayer,
+
+                visibleScale *
+                zoomLevel
+
+            );
+
+
+            /*
+             * CLICK
+             */
+
+            pageElement.addEventListener(
+                "click",
+                function(event) {
+
+
+                    if (
+                        event.target.closest(
+                            ".annotation-link"
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (
+                        movedDuringTouch
+                    ) {
+
+                        movedDuringTouch =
+                            false;
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * COVER
+                     */
+
+                    if (
+                        pageNumberValue === 1
+                    ) {
+
+                        nextPage();
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * LAST PAGE
+                     */
+
+                    if (
+                        pageNumberValue === 50
+                    ) {
+
+                        previousPage();
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * LEFT
+                     */
+
+                    if (
+                        pageNumberValue % 2 === 0
+                    ) {
+
+                        previousPage();
+
+                    }
+
+
+                    /*
+                     * RIGHT
+                     */
+
+                    else {
+
+                        nextPage();
+
+                    }
+
+                }
+            );
+
+
+            return pageElement;
+
+        }
+
+
+        /*
+         * PDF ANNOTATIONS
+         */
+
+        async function addAnnotations(
+            page,
+            layer,
+            displayScale
+        ) {
+
+
+            const viewport =
+                page.getViewport({
+                    scale:
+                        displayScale
+                });
+
+
+            const annotations =
+                await page.getAnnotations();
+
+
+            for (
+                const annotation
+                of annotations
+            ) {
+
+
+                if (
+                    annotation.subtype !==
+                    "Link"
+                ) {
+
+                    continue;
+
+                }
+
+
+                const rect =
+                    annotation.rect;
+
+
+                const link =
+                    document.createElement(
+                        "a"
+                    );
+
+
+                link.className =
+                    "annotation-link";
+
+
+                link.style.left =
+                    rect[0] *
+                    displayScale +
+                    "px";
+
+
+                link.style.top =
+                    viewport.height -
+                    rect[3] *
+                    displayScale +
+                    "px";
+
+
+                link.style.width =
+                    (
+                        rect[2] -
+                        rect[0]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                link.style.height =
+                    (
+                        rect[3] -
+                        rect[1]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                if (
+                    annotation.url
+                ) {
+
+                    link.href =
+                        annotation.url;
+
+                    link.target =
+                        "_blank";
+
+                    link.rel =
+                        "noopener noreferrer";
+
+                }
+
+
+                else if (
+                    annotation.dest
+                ) {
+
+                    link.href =
+                        "#";
+
+
+                    link.addEventListener(
+                        "click",
+                        async function(event) {
+
+                            event.preventDefault();
+
+                            event.stopPropagation();
+
+
+                            try {
+
+                                const destination =
+                                    await pdf
+                                        .getDestination(
+                                            annotation.dest
+                                        );
+
+
+                                if (
+                                    !destination
+                                ) {
+
+                                    return;
+
+                                }
+
+
+                                const pageRef =
+                                    destination[0];
+
+
+                                const index =
+                                    await pdf
+                                        .getPageIndex(
+                                            pageRef
+                                        );
+
+
+                                await navigateTo(
+                                    index + 1
+                                );
+
+                            }
+
+                            catch (
+                                error
+                            ) {
+
+                                console.error(
+                                    error
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                layer.appendChild(
+                    link
+                );
+
+            }
+
+        }
+
+
+        /*
+         * MOBILE SPREAD
+         *
+         * TWO PAGES IN ONE CANVAS
+         */
+
+        async function renderMobileSpread(
+            leftPageNumber,
+            rightPageNumber
+        ) {
+
+
+            const leftPage =
+                await pdf.getPage(
+                    leftPageNumber
+                );
+
+
+            const rightPage =
+                await pdf.getPage(
+                    rightPageNumber
+                );
+
+
+            const leftBase =
+                leftPage.getViewport({
+                    scale: 1
+                });
+
+
+            const rightBase =
+                rightPage.getViewport({
+                    scale: 1
+                });
+
+
+            const availableWidth =
+                window.innerWidth *
+                0.94;
+
+
+            const pageWidth =
+                availableWidth / 2;
+
+
+            const pageScale =
+                pageWidth /
+                leftBase.width;
+
+
+            const leftViewport =
+                leftPage.getViewport({
+                    scale:
+                        pageScale
+                });
+
+
+            const rightViewport =
+                rightPage.getViewport({
+                    scale:
+                        pageScale
+                });
+
+
+            const spreadWidth =
+                leftViewport.width +
+                rightViewport.width;
+
+
+            const spreadHeight =
+                Math.max(
+                    leftViewport.height,
+                    rightViewport.height
+                );
+
+
+            /*
+             * HIGH RESOLUTION
+             */
+
+            const desiredMultiplier =
+                getRenderMultiplier() *
+                zoomLevel;
+
+
+            let canvasWidth =
+                Math.floor(
+                    spreadWidth *
+                    desiredMultiplier
+                );
+
+
+            let canvasHeight =
+                Math.floor(
+                    spreadHeight *
+                    desiredMultiplier
+                );
+
+
+            /*
+             * iOS canvas protection
+             */
+
+            const maxCanvasPixels =
+                16000000;
+
+
+            const totalPixels =
+                canvasWidth *
+                canvasHeight;
+
+
+            if (
+                totalPixels >
+                maxCanvasPixels
+            ) {
+
+                const reduction =
+                    Math.sqrt(
+                        maxCanvasPixels /
+                        totalPixels
+                    );
+
+
+                canvasWidth =
+                    Math.floor(
+                        canvasWidth *
+                        reduction
+                    );
+
+
+                canvasHeight =
+                    Math.floor(
+                        canvasHeight *
+                        reduction
+                    );
+
+            }
+
+
+            const actualMultiplier =
+                Math.min(
+
+                    canvasWidth /
+                        spreadWidth,
+
+                    canvasHeight /
+                        spreadHeight
+
+                );
+
+
+            /*
+             * CONTAINER
+             */
+
+            const container =
+                document.createElement(
+                    "div"
+                );
+
+
+            container.className =
+                "mobile-spread";
+
+
+            container.style.width =
+                (
+                    spreadWidth *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            container.style.height =
+                (
+                    spreadHeight *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            /*
+             * CANVAS
+             */
+
+            const canvas =
+                document.createElement(
+                    "canvas"
+                );
+
+
+            const context =
+                canvas.getContext(
+                    "2d",
+                    {
+                        alpha: false
+                    }
+                );
+
+
+            canvas.width =
+                canvasWidth;
+
+
+            canvas.height =
+                canvasHeight;
+
+
+            canvas.style.width =
+                (
+                    spreadWidth *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            canvas.style.height =
+                (
+                    spreadHeight *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            container.appendChild(
+                canvas
+            );
+
+
+            /*
+             * LEFT PAGE
+             */
+
+            const leftRenderViewport =
+                leftPage.getViewport({
+                    scale:
+                        pageScale *
+                        actualMultiplier
+                });
+
+
+            await leftPage.render({
+
+                canvasContext:
+                    context,
+
+                viewport:
+                    leftRenderViewport
+
+            }).promise;
+
+
+            /*
+             * RIGHT PAGE
+             */
+
+            context.save();
+
+
+            context.translate(
+                leftRenderViewport.width,
+                0
+            );
+
+
+            const rightRenderViewport =
+                rightPage.getViewport({
+                    scale:
+                        pageScale *
+                        actualMultiplier
+                });
+
+
+            await rightPage.render({
+
+                canvasContext:
+                    context,
+
+                viewport:
+                    rightRenderViewport
+
+            }).promise;
+
+
+            context.restore();
+
+
+            /*
+             * PDF LINKS
+             */
+
+            await addMobileAnnotations(
+
+                leftPage,
+
+                container,
+
+                pageScale *
+                zoomLevel,
+
+                0
+
+            );
+
+
+            await addMobileAnnotations(
+
+                rightPage,
+
+                container,
+
+                pageScale *
+                zoomLevel,
+
+                leftViewport.width *
+                zoomLevel
+
+            );
+
+
+            /*
+             * LEFT CLICK AREA
+             */
+
+            const leftClick =
+                document.createElement(
+                    "div"
+                );
+
+
+            leftClick.className =
+                "mobile-link";
+
+
+            leftClick.style.left =
+                "0";
+
+
+            leftClick.style.top =
+                "0";
+
+
+            leftClick.style.width =
+                (
+                    leftViewport.width *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            leftClick.style.height =
+                (
+                    spreadHeight *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            leftClick.style.zIndex =
+                "5";
+
+
+            leftClick.addEventListener(
+                "click",
+                function(event) {
+
+
+                    if (
+                        movedDuringTouch
+                    ) {
+
+                        movedDuringTouch =
+                            false;
+
+                        return;
+
+                    }
+
+
+                    previousPage();
+
+                }
+            );
+
+
+            /*
+             * RIGHT CLICK AREA
+             */
+
+            const rightClick =
+                document.createElement(
+                    "div"
+                );
+
+
+            rightClick.className =
+                "mobile-link";
+
+
+            rightClick.style.left =
+                (
+                    leftViewport.width *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            rightClick.style.top =
+                "0";
+
+
+            rightClick.style.width =
+                (
+                    rightViewport.width *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            rightClick.style.height =
+                (
+                    spreadHeight *
+                    zoomLevel
+                ) +
+                "px";
+
+
+            rightClick.style.zIndex =
+                "5";
+
+
+            rightClick.addEventListener(
+                "click",
+                function(event) {
+
+
+                    if (
+                        movedDuringTouch
+                    ) {
+
+                        movedDuringTouch =
+                            false;
+
+                        return;
+
+                    }
+
+
+                    nextPage();
+
+                }
+            );
+
+
+            /*
+             * Add navigation underneath
+             * PDF hyperlinks.
+             */
+
+            container.appendChild(
+                leftClick
+            );
+
+
+            container.appendChild(
+                rightClick
+            );
+
+
+            return {
+
+                container:
+                    container,
+
+                label:
+                    leftPageNumber +
+                    "–" +
+                    rightPageNumber +
+                    " / 50"
+
+            };
+
+        }
+
+
+        /*
+         * MOBILE LINKS
+         */
+
+        async function addMobileAnnotations(
+            page,
+            container,
+            displayScale,
+            offsetX
+        ) {
+
+
+            const viewport =
+                page.getViewport({
+                    scale:
+                        displayScale
+                });
+
+
+            const annotations =
+                await page.getAnnotations();
+
+
+            for (
+                const annotation
+                of annotations
+            ) {
+
+
+                if (
+                    annotation.subtype !==
+                    "Link"
+                ) {
+
+                    continue;
+
+                }
+
+
+                const rect =
+                    annotation.rect;
+
+
+                const link =
+                    document.createElement(
+                        "a"
+                    );
+
+
+                link.className =
+                    "mobile-link annotation-link";
+
+
+                link.style.left =
+                    (
+                        offsetX +
+                        rect[0] *
+                        displayScale
+                    ) +
+                    "px";
+
+
+                link.style.top =
+                    (
+                        viewport.height -
+                        rect[3] *
+                        displayScale
+                    ) +
+                    "px";
+
+
+                link.style.width =
+                    (
+                        rect[2] -
+                        rect[0]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                link.style.height =
+                    (
+                        rect[3] -
+                        rect[1]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                link.style.zIndex =
+                    "30";
+
+
+                if (
+                    annotation.url
+                ) {
+
+                    link.href =
+                        annotation.url;
+
+                    link.target =
+                        "_blank";
+
+                    link.rel =
+                        "noopener noreferrer";
+
+                }
+
+
+                else if (
+                    annotation.dest
+                ) {
+
+                    link.href =
+                        "#";
+
+
+                    link.addEventListener(
+                        "click",
+                        async function(event) {
+
+                            event.preventDefault();
+
+                            event.stopPropagation();
+
+
+                            try {
+
+                                const destination =
+                                    await pdf
+                                        .getDestination(
+                                            annotation.dest
+                                        );
+
+
+                                if (
+                                    !destination
+                                ) {
+
+                                    return;
+
+                                }
+
+
+                                const pageRef =
+                                    destination[0];
+
+
+                                const index =
+                                    await pdf
+                                        .getPageIndex(
+                                            pageRef
+                                        );
+
+
+                                movedDuringTouch =
+                                    false;
+
+
+                                await navigateTo(
+                                    index + 1
+                                );
+
+                            }
+
+                            catch (
+                                error
+                            ) {
+
+                                console.error(
+                                    error
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                container.appendChild(
+                    link
+                );
+
+            }
+
+        }
+
+
+        /*
+         * BUILD PAGES
+         */
+
+        async function buildPages() {
+
+
+            const container =
+                document.createElement(
+                    "div"
+                );
+
+
+            /*
+             * COVER
+             */
+
+            if (
+                currentPage === 1
+            ) {
+
+                const page =
+                    await renderDesktopPage(
+                        1,
+                        "single"
+                    );
+
+
+                container.appendChild(
+                    page
+                );
+
+
+                return {
+
+                    container:
+                        container,
+
+                    label:
+                        "1 / 50"
+
+                };
+
+            }
+
+
+            /*
+             * BACK COVER
+             */
+
+            if (
+                currentPage === 50
+            ) {
+
+                const page =
+                    await renderDesktopPage(
+                        50,
+                        "single"
+                    );
+
+
+                container.appendChild(
+                    page
+                );
+
+
+                return {
+
+                    container:
+                        container,
+
+                    label:
+                        "50 / 50"
+
+                };
+
+            }
+
+
+            /*
+             * MOBILE SPREAD
+             */
+
+            if (
+                isMobile()
+            ) {
+
+                return await
+                    renderMobileSpread(
+                        currentPage,
+                        currentPage + 1
+                    );
+
+            }
+
+
+            /*
+             * DESKTOP SPREAD
+             */
+
+            container.className =
+                "spread";
+
+
+            const left =
+                await renderDesktopPage(
+                    currentPage,
+                    "left"
+                );
+
+
+            const right =
+                await renderDesktopPage(
+                    currentPage + 1,
+                    "right"
+                );
+
+
+            container.appendChild(
+                left
+            );
+
+
+            container.appendChild(
+                right
+            );
+
+
+            return {
+
+                container:
+                    container,
+
+                label:
+                    currentPage +
+                    "–" +
+                    (
+                        currentPage + 1
+                    ) +
+                    " / 50"
+
+            };
+
+        }
+
+
+        /*
+         * SHOW PAGES
+         */
+
+        async function showPages() {
+
+
+            /*
+             * Render new content first.
+             */
+
+            const result =
+                await buildPages();
+
+
+            /*
+             * Replace old content
+             * only after rendering.
+             */
+
+            book.replaceChildren(
+                result.container
+            );
+
+
+            pageNumber.textContent =
+                result.label;
+
+
+            clampPan();
+
+            applyTransform();
+
+        }
+
+
+        /*
+         * NAVIGATE
+         */
+
+        async function navigateTo(
+            target
+        ) {
+
+
+            if (
+                changingPage
+            ) {
+
+                return;
+
+            }
+
+
+            target =
+                Math.max(
+                    1,
+                    Math.min(
+                        50,
+                        target
+                    )
+                );
+
+
+            if (
+                !isMobile() &&
+                target !== 1 &&
+                target !== 50 &&
+                target % 2 !== 0
+            ) {
+
+                target--;
+
+            }
+
+
+            changingPage =
+                true;
+
+
+            currentPage =
+                target;
+
+
+            panX = 0;
+            panY = 0;
+
+
+            try {
+
+                await showPages();
+
+            }
+
+            finally {
+
+                changingPage =
+                    false;
+
+            }
+
+        }
+
+
+        /*
+         * NEXT
+         */
+
+        async function nextPage() {
+
+
+            if (
+                changingPage
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                currentPage === 1
+            ) {
+
+                currentPage = 2;
+
+            }
+
+            else if (
+                currentPage < 48
+            ) {
+
+                currentPage += 2;
+
+            }
+
+            else if (
+                currentPage === 48
+            ) {
+
+                currentPage = 50;
+
+            }
+
+            else {
+
+                return;
+
+            }
+
+
+            panX = 0;
+            panY = 0;
+
+
+            changingPage =
+                true;
+
+
+            try {
+
+                await showPages();
+
+            }
+
+            finally {
+
+                changingPage =
+                    false;
+
+            }
+
+        }
+
+
+        /*
+         * PREVIOUS
+         */
+
+        async function previousPage() {
+
+
+            if (
+                changingPage
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                currentPage === 50
+            ) {
+
+                currentPage = 48;
+
+            }
+
+            else if (
+                currentPage > 2
+            ) {
+
+                currentPage -= 2;
+
+            }
+
+            else if (
+                currentPage === 2
+            ) {
+
+                currentPage = 1;
+
+            }
+
+            else {
+
+                return;
+
+            }
+
+
+            panX = 0;
+            panY = 0;
+
+
+            changingPage =
+                true;
+
+
+            try {
+
+                await showPages();
+
+            }
+
+            finally {
+
+                changingPage =
+                    false;
+
+            }
+
+        }
+
+
+        /*
+         * ZOOM
+         */
+
+        async function setZoom(
+            value
+        ) {
+
+
+            const newZoom =
+                Math.max(
+                    1,
+                    Math.min(
+                        getMaxZoom(),
+                        value
+                    )
+                );
+
+
+            zoomLevel =
+                newZoom;
+
+
+            if (
+                zoomLevel === 1
+            ) {
+
+                panX = 0;
+                panY = 0;
+
+            }
+
+
+            zoomResetButton.textContent =
+                zoomLevel.toFixed(1) +
+                "×";
+
+
+            await showPages();
+
+        }
+
+
+        /*
+         * ZOOM IN
+         */
+
+        zoomInButton.addEventListener(
+            "click",
+            async function(event) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                await setZoom(
+                    zoomLevel + 0.5
+                );
+
+            }
+        );
+
+
+        /*
+         * ZOOM OUT
+         */
+
+        zoomOutButton.addEventListener(
+            "click",
+            async function(event) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                await setZoom(
+                    zoomLevel - 0.5
+                );
+
+            }
+        );
+
+
+        /*
+         * RESET ZOOM
+         */
+
+        zoomResetButton.addEventListener(
+            "click",
+            async function(event) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                await setZoom(1);
+
+            }
+        );
+
+
+        /*
+         * MOUSE WHEEL ZOOM
+         *
+         * Scroll up = zoom in.
+         * Scroll down = zoom out.
+         */
+
+        bookShell.addEventListener(
+            "wheel",
+            async function(event) {
+
+
+                /*
+                 * Only zoom with wheel
+                 * when the mouse is over
+                 * the portfolio.
+                 */
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                /*
+                 * Small increments make
+                 * the zoom feel natural.
+                 */
+
+                const direction =
+                    event.deltaY < 0
+                        ? 0.25
+                        : -0.25;
+
+
+                await setZoom(
+                    zoomLevel +
+                    direction
+                );
+
+            },
+            {
+                passive: false
+            }
+        );
+
+
+        /*
+         * TOUCH START
+         */
+
+        bookShell.addEventListener(
+            "touchstart",
+            function(event) {
+
+
+                movedDuringTouch =
+                    false;
+
+
+                /*
+                 * PINCH
+                 */
+
+                if (
+                    event.touches.length === 2
+                ) {
+
+                    const first =
+                        event.touches[0];
+
+
+                    const second =
+                        event.touches[1];
+
+
+                    const dx =
+                        first.clientX -
+                        second.clientX;
+
+
+                    const dy =
+                        first.clientY -
+                        second.clientY;
+
+
+                    pinchStartDistance =
+                        Math.hypot(
+                            dx,
+                            dy
+                        );
+
+
+                    pinchStartZoom =
+                        zoomLevel;
+
+
+                    pinchStartPanX =
+                        panX;
+
+
+                    pinchStartPanY =
+                        panY;
+
+
+                    pinchStartMidX =
+                        (
+                            first.clientX +
+                            second.clientX
+                        ) / 2;
+
+
+                    pinchStartMidY =
+                        (
+                            first.clientY +
+                            second.clientY
+                        ) / 2;
+
+
+                    movedDuringTouch =
+                        true;
+
+
+                    return;
+
+                }
+
+
+                /*
+                 * ONE FINGER
+                 */
+
+                if (
+                    event.touches.length === 1
+                ) {
+
+                    const touch =
+                        event.touches[0];
+
+
+                    touchStartX =
+                        touch.clientX;
+
+
+                    touchStartY =
+                        touch.clientY;
+
+
+                    /*
+                     * Only store pan start
+                     * when zoomed.
+                     */
+
+                    if (
+                        zoomLevel > 1
+                    ) {
+
+                        panStartX =
+                            touch.clientX;
+
+
+                        panStartY =
+                            touch.clientY;
+
+
+                        panStartPanX =
+                            panX;
+
+
+                        panStartPanY =
+                            panY;
+
+                    }
+
+                }
+
+            },
+            {
+                passive: true
+            }
+        );
+
+
+        /*
+         * TOUCH MOVE
+         */
+
+        bookShell.addEventListener(
+            "touchmove",
+            function(event) {
+
+
+                /*
+                 * PINCH
+                 */
+
+                if (
+                    event.touches.length === 2 &&
+                    pinchStartDistance
+                ) {
+
+                    event.preventDefault();
+
+
+                    const first =
+                        event.touches[0];
+
+
+                    const second =
+                        event.touches[1];
+
+
+                    const dx =
+                        first.clientX -
+                        second.clientX;
+
+
+                    const dy =
+                        first.clientY -
+                        second.clientY;
+
+
+                    const distance =
+                        Math.hypot(
+                            dx,
+                            dy
+                        );
+
+
+                    const ratio =
+                        distance /
+                        pinchStartDistance;
+
+
+                    zoomLevel =
+                        Math.max(
+                            1,
+                            Math.min(
+                                getMaxZoom(),
+                                pinchStartZoom *
+                                ratio
+                            )
+                        );
+
+
+                    const midX =
+                        (
+                            first.clientX +
+                            second.clientX
+                        ) / 2;
+
+
+                    const midY =
+                        (
+                            first.clientY +
+                            second.clientY
+                        ) / 2;
+
+
+                    panX =
+                        pinchStartPanX +
+                        (
+                            midX -
+                            pinchStartMidX
+                        );
+
+
+                    panY =
+                        pinchStartPanY +
+                        (
+                            midY -
+                            pinchStartMidY
+                        );
+
+
+                    clampPan();
+
+                    applyTransform();
+
+
+                    zoomResetButton.textContent =
+                        zoomLevel.toFixed(1) +
+                        "×";
+
+
+                    return;
+
+                }
+
+
+                /*
+                 * ONE FINGER PAN
+                 */
+
+                if (
+                    event.touches.length === 1 &&
+                    zoomLevel > 1
+                ) {
+
+                    event.preventDefault();
+
+
+                    const touch =
+                        event.touches[0];
+
+
+                    const dx =
+                        touch.clientX -
+                        panStartX;
+
+
+                    const dy =
+                        touch.clientY -
+                        panStartY;
+
+
+                    if (
+                        Math.abs(dx) > 5 ||
+                        Math.abs(dy) > 5
+                    ) {
+
+                        movedDuringTouch =
+                            true;
+
+                    }
+
+
+                    panX =
+                        panStartPanX +
+                        dx;
+
+
+                    panY =
+                        panStartPanY +
+                        dy;
+
+
+                    clampPan();
+
+                    applyTransform();
+
+                }
+
+            },
+            {
+                passive: false
+            }
+        );
+
+
+        /*
+         * TOUCH END
+         */
+
+        bookShell.addEventListener(
+            "touchend",
+            async function(event) {
+
+
+                if (
+                    event.touches.length !== 0
+                ) {
+
+                    return;
+
+                }
+
+
+                /*
+                 * Finish pinch.
+                 */
+
+                if (
+                    pinchStartDistance
+                ) {
+
+                    pinchStartDistance =
+                        null;
+
+
+                    clampPan();
+
+                    applyTransform();
+
+
+                    /*
+                     * Render a sharper
+                     * version at the
+                     * final zoom.
+                     */
+
+                    await showPages();
+
+
+                    return;
+
+                }
+
+
+                /*
+                 * If user dragged a
+                 * zoomed page, don't
+                 * navigate.
+                 */
+
+                if (
+                    movedDuringTouch
+                ) {
+
+                    movedDuringTouch =
+                        false;
+
+                }
+
+            }
+        );
+
+
+        /*
+         * POINTER DRAG FOR DESKTOP
+         */
+
+        bookShell.addEventListener(
+            "pointerdown",
+            function(event) {
+
+
+                if (
+                    zoomLevel <= 1
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    event.pointerType ===
+                    "touch"
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    event.target.closest(
+                        "#controls"
+                    ) ||
+                    event.target.closest(
+                        "#zoomControls"
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                dragging =
+                    true;
+
+
+                panStartX =
+                    event.clientX;
+
+
+                panStartY =
+                    event.clientY;
+
+
+                panStartPanX =
+                    panX;
+
+
+                panStartPanY =
+                    panY;
+
+
+                try {
+
+                    bookShell.setPointerCapture(
+                        event.pointerId
+                    );
+
+                }
+
+                catch (
+                    error
+                ) {}
+
+            }
+        );
+
+
+        /*
+         * DESKTOP PAN MOVE
+         */
+
+        bookShell.addEventListener(
+            "pointermove",
+            function(event) {
+
+
+                if (
+                    !dragging
+                ) {
+
+                    return;
+
+                }
+
+
+                panX =
+                    panStartPanX +
+                    (
+                        event.clientX -
+                        panStartX
+                    );
+
+
+                panY =
+                    panStartPanY +
+                    (
+                        event.clientY -
+                        panStartY
+                    );
+
+
+                clampPan();
+
+                applyTransform();
+
+            }
+        );
+
+
+        /*
+         * DESKTOP PAN END
+         */
+
+        bookShell.addEventListener(
+            "pointerup",
+            function(event) {
+
+
+                dragging =
+                    false;
+
+
+                try {
+
+                    bookShell.releasePointerCapture(
+                        event.pointerId
+                    );
+
+                }
+
+                catch (
+                    error
+                ) {}
+
+            }
+        );
+
+
+        /*
+         * PAN CANCEL
+         */
+
+        bookShell.addEventListener(
+            "pointercancel",
+            function() {
+
+                dragging =
+                    false;
+
+            }
+        );
+
+
+        /*
+         * PREVIOUS BUTTON
+         */
+
+        previous.addEventListener(
+            "click",
+            async function(event) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                await previousPage();
+
+            }
+        );
+
+
+        /*
+         * NEXT BUTTON
+         */
+
+        next.addEventListener(
+            "click",
+            async function(event) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                await nextPage();
+
+            }
+        );
+
+
+        /*
+         * KEYBOARD
+         */
+
+        document.addEventListener(
+            "keydown",
+            async function(event) {
+
+
+                if (
+                    event.key ===
+                    "ArrowRight"
+                ) {
+
+                    event.preventDefault();
+
+                    await nextPage();
+
+                }
+
+
+                if (
+                    event.key ===
+                    "ArrowLeft"
+                ) {
+
+                    event.preventDefault();
+
+                    await previousPage();
+
+                }
+
+
+                if (
+                    event.key === "+"
+                ) {
+
+                    event.preventDefault();
+
+                    await setZoom(
+                        zoomLevel + 0.5
+                    );
+
+                }
+
+
+                if (
+                    event.key === "-"
+                ) {
+
+                    event.preventDefault();
+
+                    await setZoom(
+                        zoomLevel - 0.5
+                    );
+
+                }
+
+
+                if (
+                    event.key === "0"
+                ) {
+
+                    event.preventDefault();
+
+                    await setZoom(1);
+
+                }
+
+            }
+        );
+
+
+        /*
+         * RESIZE
+         */
+
+        window.addEventListener(
+            "resize",
+            function() {
+
+
+                clearTimeout(
+                    resizeTimer
+                );
+
+
+                resizeTimer =
+                    setTimeout(
+                        async function() {
+
+
+                            if (
+                                !pdf ||
+                                changingPage
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            panX = 0;
+
+                            panY = 0;
+
+                            zoomLevel = 1;
+
+
+                            zoomResetButton.textContent =
+                                "1×";
+
+
+                            await showPages();
+
+                        },
+                        180
+                    );
+
+            }
+        );
+
+
+        /*
+         * START
+         */
+
+        loadPDF();
+
+
+    </script>
+
+
+</body>
+
+</html>
