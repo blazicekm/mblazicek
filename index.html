@@ -49,13 +49,15 @@
 
             width: 100%;
 
-            height: 100vh;
+            min-height: 100vh;
 
             display: flex;
 
             align-items: center;
 
             justify-content: center;
+
+            padding: 40px 24px;
 
         }
 
@@ -66,6 +68,10 @@
 
         }
 
+
+        /*
+         * NAME
+         */
 
         h1 {
 
@@ -88,6 +94,10 @@
         }
 
 
+        /*
+         * PROFESSION
+         */
+
         .profession {
 
             margin-top: 20px;
@@ -103,6 +113,10 @@
 
         }
 
+
+        /*
+         * PORTFOLIO
+         */
 
         .portfolio {
 
@@ -133,9 +147,63 @@
         }
 
 
+        /*
+         * CONTACT
+         */
+
+        .contact {
+
+            margin-top: 48px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 9px;
+
+        }
+
+
+        .contact a {
+
+            color: #111111;
+
+            text-decoration: none;
+
+            font-size: 14px;
+
+            font-weight: 400;
+
+            letter-spacing:
+                0.03em;
+
+            line-height: 1.4;
+
+        }
+
+
+        .contact a:hover {
+
+            opacity: 0.45;
+
+        }
+
+
+        /*
+         * MOBILE
+         */
+
         @media (
             max-width: 600px
         ) {
+
+            .page {
+
+                padding:
+                    32px 20px;
+
+            }
+
 
             .profession {
 
@@ -155,6 +223,20 @@
                     0.16em;
 
                 margin-top: 44px;
+
+            }
+
+
+            .contact {
+
+                margin-top: 40px;
+
+            }
+
+
+            .contact a {
+
+                font-size: 13px;
 
             }
 
@@ -189,12 +271,36 @@
 
             <a
                 class="portfolio"
-                href="viewer/viewer.html"
+                href="/portfolio/"
             >
 
                 PORTFOLIO &amp; CV
 
             </a>
+
+
+            <div class="contact">
+
+
+                <a
+                    href="tel:+421948023347"
+                >
+
+                    +421 948 023 347
+
+                </a>
+
+
+                <a
+                    href="mailto:matusblazicek@gmail.com"
+                >
+
+                    matusblazicek@gmail.com
+
+                </a>
+
+
+            </div>
 
 
         </main>
