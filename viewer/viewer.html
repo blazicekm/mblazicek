@@ -92,7 +92,7 @@
 
 
         /*
-         * NORMAL SPREAD
+         * SPREAD
          */
 
         .spread {
@@ -101,8 +101,12 @@
 
             display: flex;
 
+            flex-direction: row;
+
             align-items: stretch;
             justify-content: center;
+
+            width: max-content;
 
         }
 
@@ -267,6 +271,8 @@
             position: relative;
 
             background: #ffffff;
+
+            overflow: visible;
 
         }
 
@@ -682,7 +688,7 @@
 
 
         /*
-         * PAN STATE
+         * PAN
          */
 
         let panX = 0;
@@ -703,7 +709,7 @@
 
 
         /*
-         * PINCH STATE
+         * PINCH
          */
 
         let pinchStartDistance = null;
@@ -738,7 +744,11 @@
 
 
         /*
-         * RENDER QUALITY
+         * RENDER MULTIPLIER
+         *
+         * 4x on mobile.
+         *
+         * 2x on desktop.
          */
 
         function getRenderMultiplier() {
@@ -747,7 +757,7 @@
                 isMobile()
             ) {
 
-                return 2.2;
+                return 4;
 
             }
 
@@ -767,7 +777,7 @@
                 isMobile()
             ) {
 
-                return 3;
+                return 4;
 
             }
 
@@ -778,10 +788,11 @@
 
 
         /*
-         * APPLY POSITION
+         * APPLY TRANSFORM
          */
 
         function applyTransform() {
+
 
             const x =
                 -50 +
@@ -814,7 +825,7 @@
 
 
         /*
-         * LIMIT PAN
+         * CLAMP PAN
          */
 
         function clampPan() {
@@ -832,12 +843,6 @@
 
             }
 
-
-            /*
-             * Calculate the actual
-             * amount the zoomed book
-             * extends beyond the viewport.
-             */
 
             const bookWidth =
                 book.offsetWidth;
@@ -859,21 +864,27 @@
 
             const horizontalLimit =
                 Math.max(
+
                     0,
+
                     (
                         scaledWidth -
                         bookShell.clientWidth
                     ) / 2
+
                 );
 
 
             const verticalLimit =
                 Math.max(
+
                     0,
+
                     (
                         scaledHeight -
                         bookShell.clientHeight
                     ) / 2
+
                 );
 
 
@@ -949,9 +960,11 @@
                 isMobile()
             ) {
 
-                const maxPageWidth =
-                    window.innerWidth *
-                    0.47;
+                const pageWidth =
+                    (
+                        window.innerWidth *
+                        0.94
+                    ) / 2;
 
 
                 const maxHeight =
@@ -961,7 +974,7 @@
 
                 return Math.min(
 
-                    maxPageWidth /
+                    pageWidth /
                         viewport.width,
 
                     maxHeight /
@@ -972,7 +985,7 @@
             }
 
 
-            const maxPageWidth =
+            const pageWidth =
                 window.innerWidth *
                 0.46;
 
@@ -984,192 +997,13 @@
 
             return Math.min(
 
-                maxPageWidth /
+                pageWidth /
                     viewport.width,
 
                 maxHeight /
                     viewport.height
 
             );
-
-        }
-
-
-        /*
-         * ADD DESKTOP ANNOTATIONS
-         */
-
-        async function addAnnotations(
-            page,
-            layer,
-            displayScale
-        ) {
-
-
-            const viewport =
-                page.getViewport({
-                    scale:
-                        displayScale
-                });
-
-
-            const annotations =
-                await page.getAnnotations();
-
-
-            for (
-                const annotation
-                of annotations
-            ) {
-
-
-                if (
-                    annotation.subtype !==
-                    "Link"
-                ) {
-
-                    continue;
-
-                }
-
-
-                const rect =
-                    annotation.rect;
-
-
-                const link =
-                    document.createElement(
-                        "a"
-                    );
-
-
-                link.className =
-                    "annotation-link";
-
-
-                link.style.left =
-                    rect[0] *
-                    displayScale +
-                    "px";
-
-
-                link.style.top =
-                    viewport.height -
-                    rect[3] *
-                    displayScale +
-                    "px";
-
-
-                link.style.width =
-                    (
-                        rect[2] -
-                        rect[0]
-                    ) *
-                    displayScale +
-                    "px";
-
-
-                link.style.height =
-                    (
-                        rect[3] -
-                        rect[1]
-                    ) *
-                    displayScale +
-                    "px";
-
-
-                if (
-                    annotation.url
-                ) {
-
-                    link.href =
-                        annotation.url;
-
-                    link.target =
-                        "_blank";
-
-                    link.rel =
-                        "noopener noreferrer";
-
-                }
-
-                else if (
-                    annotation.dest
-                ) {
-
-                    link.href =
-                        "#";
-
-
-                    link.addEventListener(
-                        "click",
-                        async function(event) {
-
-                            event.preventDefault();
-
-                            event.stopPropagation();
-
-
-                            try {
-
-                                const destination =
-                                    await pdf
-                                        .getDestination(
-                                            annotation.dest
-                                        );
-
-
-                                if (
-                                    !destination
-                                ) {
-
-                                    return;
-
-                                }
-
-
-                                const pageRef =
-                                    destination[0];
-
-
-                                const index =
-                                    await pdf
-                                        .getPageIndex(
-                                            pageRef
-                                        );
-
-
-                                const target =
-                                    index + 1;
-
-
-                                await navigateTo(
-                                    target
-                                );
-
-                            }
-
-                            catch (
-                                error
-                            ) {
-
-                                console.error(
-                                    error
-                                );
-
-                            }
-
-                        }
-                    );
-
-                }
-
-
-                layer.appendChild(
-                    link
-                );
-
-            }
 
         }
 
@@ -1305,6 +1139,10 @@
             }).promise;
 
 
+            /*
+             * LINKS
+             */
+
             const annotationLayer =
                 document.createElement(
                     "div"
@@ -1331,7 +1169,7 @@
 
 
             /*
-             * Desktop click navigation
+             * PAGE CLICK
              */
 
             pageElement.addEventListener(
@@ -1396,9 +1234,185 @@
 
 
         /*
-         * RENDER MOBILE SPREAD
+         * DESKTOP ANNOTATIONS
+         */
+
+        async function addAnnotations(
+            page,
+            layer,
+            displayScale
+        ) {
+
+
+            const viewport =
+                page.getViewport({
+                    scale:
+                        displayScale
+                });
+
+
+            const annotations =
+                await page.getAnnotations();
+
+
+            for (
+                const annotation
+                of annotations
+            ) {
+
+
+                if (
+                    annotation.subtype !==
+                    "Link"
+                ) {
+
+                    continue;
+
+                }
+
+
+                const rect =
+                    annotation.rect;
+
+
+                const link =
+                    document.createElement(
+                        "a"
+                    );
+
+
+                link.className =
+                    "annotation-link";
+
+
+                link.style.left =
+                    rect[0] *
+                    displayScale +
+                    "px";
+
+
+                link.style.top =
+                    viewport.height -
+                    rect[3] *
+                    displayScale +
+                    "px";
+
+
+                link.style.width =
+                    (
+                        rect[2] -
+                        rect[0]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                link.style.height =
+                    (
+                        rect[3] -
+                        rect[1]
+                    ) *
+                    displayScale +
+                    "px";
+
+
+                if (
+                    annotation.url
+                ) {
+
+                    link.href =
+                        annotation.url;
+
+                    link.target =
+                        "_blank";
+
+                    link.rel =
+                        "noopener noreferrer";
+
+                }
+
+
+                else if (
+                    annotation.dest
+                ) {
+
+                    link.href =
+                        "#";
+
+
+                    link.addEventListener(
+                        "click",
+                        async function(event) {
+
+                            event.preventDefault();
+
+                            event.stopPropagation();
+
+
+                            try {
+
+                                const destination =
+                                    await pdf
+                                        .getDestination(
+                                            annotation.dest
+                                        );
+
+
+                                if (
+                                    !destination
+                                ) {
+
+                                    return;
+
+                                }
+
+
+                                const pageRef =
+                                    destination[0];
+
+
+                                const index =
+                                    await pdf
+                                        .getPageIndex(
+                                            pageRef
+                                        );
+
+
+                                await navigateTo(
+                                    index + 1
+                                );
+
+                            }
+
+                            catch (
+                                error
+                            ) {
+
+                                console.error(
+                                    error
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                layer.appendChild(
+                    link
+                );
+
+            }
+
+        }
+
+
+        /*
+         * MOBILE SPREAD
          *
-         * Both pages share one canvas.
+         * TWO PAGES -> ONE CANVAS
          */
 
         async function renderMobileSpread(
@@ -1436,13 +1450,13 @@
                 0.94;
 
 
-            const pageWidth =
+            const singlePageWidth =
                 availableWidth /
                 2;
 
 
             const pageScale =
-                pageWidth /
+                singlePageWidth /
                 leftBase.width;
 
 
@@ -1460,7 +1474,12 @@
                 });
 
 
-            const pageHeight =
+            const spreadWidth =
+                leftViewport.width +
+                rightViewport.width;
+
+
+            const spreadHeight =
                 Math.max(
                     leftViewport.height,
                     rightViewport.height
@@ -1468,8 +1487,7 @@
 
 
             /*
-             * Render at a higher
-             * internal resolution.
+             * HIGH RESOLUTION
              */
 
             const desiredMultiplier =
@@ -1479,27 +1497,28 @@
 
             let canvasWidth =
                 Math.floor(
-                    (
-                        leftViewport.width +
-                        rightViewport.width
-                    ) *
+                    spreadWidth *
                     desiredMultiplier
                 );
 
 
             let canvasHeight =
                 Math.floor(
-                    pageHeight *
+                    spreadHeight *
                     desiredMultiplier
                 );
 
 
             /*
-             * Safari/iOS protection.
+             * iOS maximum canvas protection.
+             *
+             * Apple/Safari can reject
+             * canvases above roughly
+             * 16.7 million pixels.
              */
 
-            const maxPixels =
-                12500000;
+            const maxCanvasPixels =
+                16000000;
 
 
             const totalPixels =
@@ -1509,12 +1528,12 @@
 
             if (
                 totalPixels >
-                maxPixels
+                maxCanvasPixels
             ) {
 
                 const reduction =
                     Math.sqrt(
-                        maxPixels /
+                        maxCanvasPixels /
                         totalPixels
                     );
 
@@ -1536,20 +1555,17 @@
 
 
             /*
-             * Actual render multiplier.
+             * ACTUAL RENDER SCALE
              */
 
             const actualMultiplier =
                 Math.min(
 
                     canvasWidth /
-                        (
-                            leftViewport.width +
-                            rightViewport.width
-                        ),
+                        spreadWidth,
 
                     canvasHeight /
-                        pageHeight
+                        spreadHeight
 
                 );
 
@@ -1569,12 +1585,14 @@
 
 
             container.style.width =
-                availableWidth +
+                spreadWidth *
+                zoomLevel +
                 "px";
 
 
             container.style.height =
-                pageHeight +
+                spreadHeight *
+                zoomLevel +
                 "px";
 
 
@@ -1590,7 +1608,10 @@
 
             const context =
                 canvas.getContext(
-                    "2d"
+                    "2d",
+                    {
+                        alpha: false
+                    }
                 );
 
 
@@ -1603,12 +1624,14 @@
 
 
             canvas.style.width =
-                availableWidth +
+                spreadWidth *
+                zoomLevel +
                 "px";
 
 
             canvas.style.height =
-                pageHeight +
+                spreadHeight *
+                zoomLevel +
                 "px";
 
 
@@ -1676,7 +1699,7 @@
 
 
             /*
-             * REAL PDF LINKS
+             * MOBILE LINKS
              */
 
             await addMobileAnnotations(
@@ -1703,10 +1726,11 @@
 
 
             /*
-             * LEFT CLICK AREA
+             * PAGE CLICK AREAS
              *
-             * Must sit underneath
-             * real PDF links.
+             * z-index 5
+             *
+             * PDF links use z-index 30.
              */
 
             const leftClick =
@@ -1728,12 +1752,14 @@
 
 
             leftClick.style.width =
-                leftViewport.width +
+                leftViewport.width *
+                zoomLevel +
                 "px";
 
 
             leftClick.style.height =
-                pageHeight +
+                spreadHeight *
+                zoomLevel +
                 "px";
 
 
@@ -1744,7 +1770,6 @@
             leftClick.addEventListener(
                 "click",
                 function(event) {
-
 
                     if (
                         movedDuringTouch
@@ -1764,10 +1789,6 @@
             );
 
 
-            /*
-             * RIGHT CLICK AREA
-             */
-
             const rightClick =
                 document.createElement(
                     "div"
@@ -1779,7 +1800,8 @@
 
 
             rightClick.style.left =
-                leftViewport.width +
+                leftViewport.width *
+                zoomLevel +
                 "px";
 
 
@@ -1788,12 +1810,14 @@
 
 
             rightClick.style.width =
-                rightViewport.width +
+                rightViewport.width *
+                zoomLevel +
                 "px";
 
 
             rightClick.style.height =
-                pageHeight +
+                spreadHeight *
+                zoomLevel +
                 "px";
 
 
@@ -1804,7 +1828,6 @@
             rightClick.addEventListener(
                 "click",
                 function(event) {
-
 
                     if (
                         movedDuringTouch
@@ -1834,6 +1857,28 @@
             );
 
 
+            /*
+             * CLICK ON SPREAD
+             */
+
+            container.addEventListener(
+                "click",
+                function(event) {
+
+                    if (
+                        event.target.closest(
+                            ".annotation-link"
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+                }
+            );
+
+
             return {
 
                 container:
@@ -1851,7 +1896,7 @@
 
 
         /*
-         * MOBILE PDF LINKS
+         * MOBILE ANNOTATIONS
          */
 
         async function addMobileAnnotations(
@@ -2005,16 +2050,12 @@
                                         );
 
 
-                                const target =
-                                    index + 1;
-
-
                                 movedDuringTouch =
                                     false;
 
 
                                 await navigateTo(
-                                    target
+                                    index + 1
                                 );
 
                             }
@@ -2051,12 +2092,6 @@
         async function buildPages() {
 
 
-            const container =
-                document.createElement(
-                    "div"
-                );
-
-
             /*
              * COVER
              */
@@ -2064,6 +2099,12 @@
             if (
                 currentPage === 1
             ) {
+
+                const container =
+                    document.createElement(
+                        "div"
+                    );
+
 
                 const page =
                     await renderDesktopPage(
@@ -2098,6 +2139,12 @@
                 currentPage === 50
             ) {
 
+                const container =
+                    document.createElement(
+                        "div"
+                    );
+
+
                 const page =
                     await renderDesktopPage(
                         50,
@@ -2124,7 +2171,7 @@
 
 
             /*
-             * MOBILE SPREAD
+             * MOBILE
              */
 
             if (
@@ -2141,8 +2188,14 @@
 
 
             /*
-             * DESKTOP SPREAD
+             * DESKTOP
              */
+
+            const container =
+                document.createElement(
+                    "div"
+                );
+
 
             container.className =
                 "spread";
@@ -2198,16 +2251,13 @@
 
 
             /*
-             * Render everything first.
+             * Render first.
+             * Replace second.
              */
 
             const result =
                 await buildPages();
 
-
-            /*
-             * Then replace old view.
-             */
 
             book.replaceChildren(
                 result.container
@@ -2274,6 +2324,7 @@
 
 
             panX = 0;
+
             panY = 0;
 
 
@@ -2294,7 +2345,7 @@
 
 
         /*
-         * NEXT PAGE
+         * NEXT
          */
 
         async function nextPage() {
@@ -2333,6 +2384,7 @@
 
 
             panX = 0;
+
             panY = 0;
 
 
@@ -2357,7 +2409,7 @@
 
 
         /*
-         * PREVIOUS PAGE
+         * PREVIOUS
          */
 
         async function previousPage() {
@@ -2396,6 +2448,7 @@
 
 
             panX = 0;
+
             panY = 0;
 
 
@@ -2428,6 +2481,10 @@
         ) {
 
 
+            const oldZoom =
+                zoomLevel;
+
+
             zoomLevel =
                 Math.max(
                     1,
@@ -2443,7 +2500,23 @@
             ) {
 
                 panX = 0;
+                panY = 0;
 
+            }
+
+
+            /*
+             * If zooming in from
+             * 1x, keep everything
+             * centered.
+             */
+
+            if (
+                oldZoom === 1 &&
+                zoomLevel > 1
+            ) {
+
+                panX = 0;
                 panY = 0;
 
             }
@@ -2504,12 +2577,7 @@
 
 
         /*
-         * TOUCH START
-         *
-         * One finger = start panning
-         * when zoomed.
-         *
-         * Two fingers = pinch.
+         * ONE-FINGER PAN
          */
 
         bookShell.addEventListener(
@@ -2521,99 +2589,34 @@
                     false;
 
 
-                /*
-                 * PINCH
-                 */
-
                 if (
-                    event.touches.length === 2
+                    event.touches.length !== 1 ||
+                    zoomLevel <= 1
                 ) {
-
-                    const first =
-                        event.touches[0];
-
-
-                    const second =
-                        event.touches[1];
-
-
-                    const dx =
-                        first.clientX -
-                        second.clientX;
-
-
-                    const dy =
-                        first.clientY -
-                        second.clientY;
-
-
-                    pinchStartDistance =
-                        Math.hypot(
-                            dx,
-                            dy
-                        );
-
-
-                    pinchStartZoom =
-                        zoomLevel;
-
-
-                    pinchStartPanX =
-                        panX;
-
-
-                    pinchStartPanY =
-                        panY;
-
-
-                    pinchStartMidX =
-                        (
-                            first.clientX +
-                            second.clientX
-                        ) / 2;
-
-
-                    pinchStartMidY =
-                        (
-                            first.clientY +
-                            second.clientY
-                        ) / 2;
-
 
                     return;
 
                 }
 
 
-                /*
-                 * ONE-FINGER PAN
-                 */
-
-                if (
-                    event.touches.length === 1 &&
-                    zoomLevel > 1
-                ) {
-
-                    const touch =
-                        event.touches[0];
+                const touch =
+                    event.touches[0];
 
 
-                    panStartX =
-                        touch.clientX;
+                panStartX =
+                    touch.clientX;
 
 
-                    panStartY =
-                        touch.clientY;
+                panStartY =
+                    touch.clientY;
 
 
-                    panStartPanX =
-                        panX;
+                panStartPanX =
+                    panX;
 
 
-                    panStartPanY =
-                        panY;
-
-                }
+                panStartPanY =
+                    panY;
 
             },
             {
@@ -2623,7 +2626,7 @@
 
 
         /*
-         * TOUCH MOVE
+         * ONE-FINGER PAN MOVE
          */
 
         bookShell.addEventListener(
@@ -2631,160 +2634,57 @@
             function(event) {
 
 
-                /*
-                 * PINCH + PAN
-                 */
-
                 if (
-                    event.touches.length === 2 &&
-                    pinchStartDistance
+                    event.touches.length !== 1 ||
+                    zoomLevel <= 1
                 ) {
-
-                    event.preventDefault();
-
-
-                    const first =
-                        event.touches[0];
-
-
-                    const second =
-                        event.touches[1];
-
-
-                    const dx =
-                        first.clientX -
-                        second.clientX;
-
-
-                    const dy =
-                        first.clientY -
-                        second.clientY;
-
-
-                    const distance =
-                        Math.hypot(
-                            dx,
-                            dy
-                        );
-
-
-                    const ratio =
-                        distance /
-                        pinchStartDistance;
-
-
-                    zoomLevel =
-                        Math.max(
-                            1,
-                            Math.min(
-                                getMaxZoom(),
-                                pinchStartZoom *
-                                ratio
-                            )
-                        );
-
-
-                    const midX =
-                        (
-                            first.clientX +
-                            second.clientX
-                        ) / 2;
-
-
-                    const midY =
-                        (
-                            first.clientY +
-                            second.clientY
-                        ) / 2;
-
-
-                    panX =
-                        pinchStartPanX +
-                        (
-                            midX -
-                            pinchStartMidX
-                        );
-
-
-                    panY =
-                        pinchStartPanY +
-                        (
-                            midY -
-                            pinchStartMidY
-                        );
-
-
-                    clampPan();
-
-                    applyTransform();
-
-
-                    zoomResetButton.textContent =
-                        zoomLevel.toFixed(1) +
-                        "×";
-
-
-                    movedDuringTouch =
-                        true;
-
 
                     return;
 
                 }
 
 
-                /*
-                 * ONE-FINGER PAN
-                 */
+                event.preventDefault();
+
+
+                const touch =
+                    event.touches[0];
+
+
+                const dx =
+                    touch.clientX -
+                    panStartX;
+
+
+                const dy =
+                    touch.clientY -
+                    panStartY;
+
 
                 if (
-                    event.touches.length === 1 &&
-                    zoomLevel > 1
+                    Math.abs(dx) > 4 ||
+                    Math.abs(dy) > 4
                 ) {
 
-                    event.preventDefault();
-
-
-                    const touch =
-                        event.touches[0];
-
-
-                    const dx =
-                        touch.clientX -
-                        panStartX;
-
-
-                    const dy =
-                        touch.clientY -
-                        panStartY;
-
-
-                    if (
-                        Math.abs(dx) > 4 ||
-                        Math.abs(dy) > 4
-                    ) {
-
-                        movedDuringTouch =
-                            true;
-
-                    }
-
-
-                    panX =
-                        panStartPanX +
-                        dx;
-
-
-                    panY =
-                        panStartPanY +
-                        dy;
-
-
-                    clampPan();
-
-                    applyTransform();
+                    movedDuringTouch =
+                        true;
 
                 }
+
+
+                panX =
+                    panStartPanX +
+                    dx;
+
+
+                panY =
+                    panStartPanY +
+                    dy;
+
+
+                clampPan();
+
+                applyTransform();
 
             },
             {
@@ -2794,17 +2694,201 @@
 
 
         /*
-         * TOUCH END
+         * PINCH START
+         */
+
+        bookShell.addEventListener(
+            "touchstart",
+            function(event) {
+
+
+                if (
+                    event.touches.length !== 2
+                ) {
+
+                    return;
+
+                }
+
+
+                const first =
+                    event.touches[0];
+
+
+                const second =
+                    event.touches[1];
+
+
+                const dx =
+                    first.clientX -
+                    second.clientX;
+
+
+                const dy =
+                    first.clientY -
+                    second.clientY;
+
+
+                pinchStartDistance =
+                    Math.hypot(
+                        dx,
+                        dy
+                    );
+
+
+                pinchStartZoom =
+                    zoomLevel;
+
+
+                pinchStartPanX =
+                    panX;
+
+
+                pinchStartPanY =
+                    panY;
+
+
+                pinchStartMidX =
+                    (
+                        first.clientX +
+                        second.clientX
+                    ) / 2;
+
+
+                pinchStartMidY =
+                    (
+                        first.clientY +
+                        second.clientY
+                    ) / 2;
+
+
+                movedDuringTouch =
+                    true;
+
+            },
+            {
+                passive: true
+            }
+        );
+
+
+        /*
+         * PINCH MOVE
+         */
+
+        bookShell.addEventListener(
+            "touchmove",
+            function(event) {
+
+
+                if (
+                    event.touches.length !== 2 ||
+                    !pinchStartDistance
+                ) {
+
+                    return;
+
+                }
+
+
+                event.preventDefault();
+
+
+                const first =
+                    event.touches[0];
+
+
+                const second =
+                    event.touches[1];
+
+
+                const dx =
+                    first.clientX -
+                    second.clientX;
+
+
+                const dy =
+                    first.clientY -
+                    second.clientY;
+
+
+                const distance =
+                    Math.hypot(
+                        dx,
+                        dy
+                    );
+
+
+                const ratio =
+                    distance /
+                    pinchStartDistance;
+
+
+                zoomLevel =
+                    Math.max(
+                        1,
+                        Math.min(
+                            getMaxZoom(),
+                            pinchStartZoom *
+                            ratio
+                        )
+                    );
+
+
+                const midX =
+                    (
+                        first.clientX +
+                        second.clientX
+                    ) / 2;
+
+
+                const midY =
+                    (
+                        first.clientY +
+                        second.clientY
+                    ) / 2;
+
+
+                panX =
+                    pinchStartPanX +
+                    (
+                        midX -
+                        pinchStartMidX
+                    );
+
+
+                panY =
+                    pinchStartPanY +
+                    (
+                        midY -
+                        pinchStartMidY
+                    );
+
+
+                clampPan();
+
+                applyTransform();
+
+
+                zoomResetButton.textContent =
+                    zoomLevel.toFixed(1) +
+                    "×";
+
+            },
+            {
+                passive: false
+            }
+        );
+
+
+        /*
+         * PINCH END
          */
 
         bookShell.addEventListener(
             "touchend",
             async function(event) {
 
-
-                /*
-                 * Still another finger down.
-                 */
 
                 if (
                     event.touches.length !== 0
@@ -2815,59 +2899,179 @@
                 }
 
 
-                /*
-                 * Finish pinch.
-                 */
-
                 if (
-                    pinchStartDistance
+                    !pinchStartDistance
                 ) {
 
-                    pinchStartDistance =
-                        null;
-
-
-                    clampPan();
-
-                    applyTransform();
-
-
-                    /*
-                     * Re-render at final
-                     * zoom resolution.
-                     */
-
-                    await showPages();
+                    return;
 
                 }
+
+
+                pinchStartDistance =
+                    null;
+
+
+                clampPan();
+
+                applyTransform();
+
+
+                /*
+                 * Re-render the pages
+                 * at the final zoom.
+                 */
+
+                await showPages();
 
             }
         );
 
 
         /*
-         * CONTROLS
+         * POINTER DRAG
+         *
+         * Useful for desktop
+         * when zoomed.
          */
 
-        previous.addEventListener(
-            "click",
+        bookShell.addEventListener(
+            "pointerdown",
             function(event) {
 
-                event.stopPropagation();
 
-                previousPage();
+                if (
+                    zoomLevel <= 1
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    event.pointerType ===
+                    "touch"
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    event.target.closest(
+                        "#controls"
+                    ) ||
+                    event.target.closest(
+                        "#zoomControls"
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                dragging = true;
+
+
+                panStartX =
+                    event.clientX;
+
+
+                panStartY =
+                    event.clientY;
+
+
+                panStartPanX =
+                    panX;
+
+
+                panStartPanY =
+                    panY;
+
+
+                try {
+
+                    bookShell.setPointerCapture(
+                        event.pointerId
+                    );
+
+                }
+
+                catch (
+                    error
+                ) {}
 
             }
         );
 
 
-        next.addEventListener(
-            "click",
+        /*
+         * POINTER MOVE
+         */
+
+        bookShell.addEventListener(
+            "pointermove",
             function(event) {
 
-                event.stopPropagation();
 
-                nextPage();
+                if (
+                    !dragging
+                ) {
+
+                    return;
+
+                }
+
+
+                panX =
+                    panStartPanX +
+                    (
+                        event.clientX -
+                        panStartX
+                    );
+
+
+                panY =
+                    panStartPanY +
+                    (
+                        event.clientY -
+                        panStartY
+                    );
+
+
+                clampPan();
+
+                applyTransform();
+
+            }
+        );
+
+
+        /*
+         * POINTER UP
+         */
+
+        bookShell.addEventListener(
+            "pointerup",
+            function(event) {
+
+                dragging = false;
+
+
+                try {
+
+                    bookShell.releasePointerCapture(
+                        event.pointerId
+                    );
+
+                }
+
+                catch (
+                    error
+                ) {}
 
             }
         );
@@ -2966,7 +3170,14 @@
 
 
                             panX = 0;
+
                             panY = 0;
+
+                            zoomLevel = 1;
+
+
+                            zoomResetButton.textContent =
+                                "1×";
 
 
                             await showPages();
